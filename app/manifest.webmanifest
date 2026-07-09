@@ -1,0 +1,17 @@
+{
+  "name": "SkinScore — daily skin protocol",
+  "short_name": "SkinScore",
+  "description": "Evidence-graded daily skin protocol, habit tracker, and research console.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEEAE3",
+  "theme_color": "#3D3A78",
+  "categories": ["health", "lifestyle", "medical"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

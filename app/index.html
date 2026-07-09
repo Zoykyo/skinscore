@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SkinScore — daily skin protocol</title>
+  <meta name="description" content="Evidence-graded, personalized daily skin protocol, habit tracker, and research console.">
+  <meta name="theme-color" content="#3D3A78">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SkinScore">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #EEEAE3; --surface: #FBF9F6; --surface-2: #F4F0E9;
+    --ink: #201D18; --ink-soft: #6B655B; --ink-faint: #9A9388;
+    --line: #DCD5C9; --line-soft: #E7E1D7;
+    --accent: #3D3A78; --accent-ink: #2C295C;
+    --am: #C6871F; --am-wash: rgba(198,135,31,.10);
+    --pm: #3D3A78; --pm-wash: rgba(61,58,120,.08);
+    --core: #2C7A54; --promising: #3E7C9A; --experimental: #C0851F; --skip: #B04733;
+    --good: #2C7A54; --caution: #C0851F; --avoid: #B04733;
+    --warn-bg: rgba(198,135,31,.12); --warn-ink: #8a5a13;
+    --shadow: 0 1px 2px rgba(32,29,24,.05), 0 8px 24px rgba(32,29,24,.05);
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+    --mono: "Cascadia Code", "Consolas", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  [data-mode="night"] {
+    --bg: #14131A; --surface: #1E1D27; --surface-2: #262532;
+    --ink: #ECE7DF; --ink-soft: #A29CAB; --ink-faint: #6E6979;
+    --line: #322F40; --line-soft: #2A2836;
+    --accent: #A6A2EE; --accent-ink: #C7C4F5;
+    --am: #E0A94A; --am-wash: rgba(224,169,74,.07);
+    --pm: #A6A2EE; --pm-wash: rgba(166,162,238,.09);
+    --core: #4FB07E; --promising: #6BADCB; --experimental: #DBA544; --skip: #D46A56;
+    --good: #4FB07E; --caution: #DBA544; --avoid: #D46A56;
+    --warn-bg: rgba(224,169,74,.13); --warn-ink: #E9B96A;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased; transition: background .5s ease, color .3s ease; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 128px; }
+  .tnum { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  h1,h2,h3,h4 { text-wrap: balance; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  button { font-family: inherit; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 0 18px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark { width: 40px; height: 40px; border-radius: 11px; position: relative; flex: none;
+    background: radial-gradient(circle at 32% 30%, var(--am), var(--accent) 78%); box-shadow: inset 0 0 0 1px rgba(255,255,255,.15), var(--shadow); }
+  .mark::after { content: ""; position: absolute; inset: 0; border-radius: 11px;
+    background: radial-gradient(circle at 70% 74%, rgba(255,255,255,.55), transparent 42%); mix-blend-mode: overlay; }
+  .brand h1 { font-size: 20px; letter-spacing: -.02em; }
+  .brand .sub { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .head-right { display: flex; align-items: center; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; font-size: 13px; color: var(--ink-soft); box-shadow: var(--shadow); }
+  .chip .tnum { color: var(--ink); font-weight: 600; }
+  .iconbtn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    cursor: pointer; font-size: 17px; display: grid; place-items: center; box-shadow: var(--shadow); transition: transform .2s; }
+  .iconbtn:hover { transform: translateY(-1px); }
+  .installbtn { display: none; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 11px; border: none; background: var(--accent);
+    color: #fff; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: var(--shadow); }
+  [data-mode="night"] .installbtn, [data-mode="night"] .primary { color: #14131A; }
+  .installbtn.show { display: inline-flex; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  nav.tabs { display: flex; gap: 4px; padding: 5px; margin: 0 0 24px; background: var(--surface-2); border: 1px solid var(--line-soft);
+    border-radius: 14px; width: fit-content; }
+  nav.tabs button { border: none; background: transparent; color: var(--ink-soft); cursor: pointer; font-size: 14px; font-weight: 550;
+    padding: 9px 16px; border-radius: 10px; transition: all .18s; letter-spacing: -.01em; }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+
+  section[hidden] { display: none; }
+  .eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); font-weight: 650; margin-bottom: 10px; }
+  .thesis { font-family: var(--serif); font-size: clamp(19px, 3vw, 25px); line-height: 1.32; font-style: italic; color: var(--ink); max-width: 40ch; }
+  .lede { font-size: 15px; color: var(--ink-soft); max-width: 62ch; line-height: 1.6; margin: 4px 0 22px; }
+  .sectionhead { margin: 30px 0 14px; }
+  .sectionhead h2 { font-size: 19px; }
+  .primary { border: none; background: var(--accent); color: #fff; font-weight: 600; font-size: 14px; padding: 11px 18px; border-radius: 11px;
+    cursor: pointer; box-shadow: var(--shadow); display: inline-flex; align-items: center; gap: 8px; }
+
+  /* Personalize banner + For-You card */
+  .pbanner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 18px; margin-bottom: 16px; border-radius: 16px;
+    border: 1px solid var(--line); background: linear-gradient(120deg, var(--am-wash), var(--pm-wash)), var(--surface); box-shadow: var(--shadow); }
+  .pbanner .pb-txt { flex: 1; min-width: 200px; }
+  .pbanner .pb-txt b { font-size: 15px; } .pbanner .pb-txt small { display: block; color: var(--ink-soft); font-size: 12.5px; margin-top: 3px; }
+  .foryou { border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .foryou .fy-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .foryou .fy-head h3 { font-size: 15px; }
+  .foryou .fy-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .foryou h4 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+  .foryou ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .foryou li { font-size: 13px; display: flex; gap: 8px; align-items: flex-start; }
+  .foryou li .dotc { flex: none; margin-top: 1px; }
+  .pchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .pchip { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-soft); color: var(--ink-soft); }
+
+  .hero { background: linear-gradient(180deg, var(--am-wash), transparent 60%), var(--surface); border: 1px solid var(--line); border-radius: 20px;
+    padding: 24px; box-shadow: var(--shadow); display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; margin-bottom: 16px; transition: background .5s ease; }
+  [data-mode="night"] .hero { background: linear-gradient(180deg, var(--pm-wash), transparent 60%), var(--surface); }
+  .dial { position: relative; width: 132px; height: 132px; flex: none; }
+  .dial svg { transform: rotate(-90deg); }
+  .dial .center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .dial .pct { font-family: var(--mono); font-size: 30px; font-weight: 600; line-height: 1; }
+  .dial .pctlabel { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); margin-top: 5px; }
+  .hero-copy h2 { font-size: 22px; margin-bottom: 4px; }
+  .hero-copy .when { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
+  .hero-copy .focus { font-size: 14px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 11px 14px; display: flex; gap: 9px; align-items: flex-start; }
+  .hero-copy .focus b { color: var(--accent-ink); }
+
+  .barrier { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 13px 16px; margin-bottom: 16px; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow); }
+  .barrier .q { font-weight: 550; font-size: 14px; flex: 1; min-width: 180px; }
+  .barrier .q small { display: block; color: var(--ink-soft); font-weight: 400; font-size: 12.5px; margin-top: 2px; }
+  .barrier .acts { display: flex; gap: 8px; }
+  .minibtn { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; font-size: 13px; font-weight: 600;
+    padding: 8px 14px; border-radius: 9px; transition: all .15s; }
+  .minibtn:hover { border-color: var(--accent); }
+  .minibtn.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: transparent; }
+  .barrier.recovery { border-color: transparent; background: var(--warn-bg); }
+  .barrier.recovery .q { color: var(--warn-ink); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 4px 8px; box-shadow: var(--shadow); overflow: hidden; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 15px 16px 12px; }
+  .panel-head .lbl { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15px; }
+  .panel-head .glyph { font-size: 16px; }
+  .panel-head.am { border-top: 3px solid var(--am); }
+  .panel-head .count { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); }
+  ul.items { list-style: none; margin: 0; padding: 0 8px; }
+  li.item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 8px; border-top: 1px solid var(--line-soft); cursor: pointer; transition: background .15s; }
+  li.item:first-child { border-top: none; }
+  li.item:hover { background: var(--surface-2); }
+  li.item.paused { opacity: .62; cursor: default; }
+  li.item.paused:hover { background: transparent; }
+  .box { width: 21px; height: 21px; border-radius: 7px; border: 1.5px solid var(--line); flex: none; margin-top: 1px; display: grid; place-items: center;
+    transition: all .18s; background: var(--surface); }
+  li.item.done .box { background: var(--accent); border-color: var(--accent); }
+  li.item.paused .box { border-style: dashed; background: var(--surface-2); }
+  .box svg { width: 12px; height: 12px; opacity: 0; transform: scale(.5); transition: all .18s; }
+  li.item.done .box svg { opacity: 1; transform: scale(1); }
+  .itxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .itxt .name { font-weight: 550; font-size: 14.5px; transition: color .2s; }
+  li.item.done .itxt .name { color: var(--ink-faint); text-decoration: line-through; text-decoration-color: var(--line); }
+  .itxt .note { font-size: 12.5px; color: var(--ink-soft); }
+  li.item.paused .itxt .note { color: var(--warn-ink); }
+  .meta { display: flex; align-items: center; gap: 6px; flex: none; }
+  .dotc { font-size: 13px; line-height: 1; }
+  .score { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink-soft); background: var(--surface-2); border-radius: 6px;
+    padding: 2px 7px; border: 1px solid var(--line-soft); }
+  .tag { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; font-weight: 700; padding: 2px 6px; border-radius: 5px; white-space: nowrap; }
+  .tag.rx { color: #7A3E12; background: rgba(198,135,31,.16); }
+  .tag.trial { color: var(--promising); background: rgba(62,124,154,.14); }
+  .tag.acne { color: var(--skip); background: rgba(176,71,51,.12); }
+  .tag.caution { color: var(--warn-ink); background: var(--warn-bg); }
+  .tag.paused { color: var(--ink-faint); background: var(--surface-2); }
+  .tag.avoid { color: var(--avoid); background: color-mix(in srgb, var(--avoid) 13%, transparent); }
+  .tag.pick { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  [data-mode="night"] .tag.rx { color: #E9B96A; }
+
+  .group { margin-bottom: 18px; }
+  .group > .g-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 12px; cursor: pointer; }
+  .g-head .g-title { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 15px; }
+  .g-head .g-sub { font-size: 12.5px; color: var(--ink-soft); font-weight: 400; }
+  .g-head .caret { color: var(--ink-faint); transition: transform .2s; font-size: 12px; }
+  .group.collapsed .caret { transform: rotate(-90deg); }
+  .group.collapsed .g-body { display: none; }
+
+  .trials { display: flex; flex-direction: column; gap: 10px; }
+  .trialcard { background: var(--surface); border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px; box-shadow: var(--shadow); }
+  .trialcard .tc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .trialcard .tc-name { font-weight: 600; font-size: 14.5px; }
+  .trialcard .tc-days { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+  .tbar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 10px 0 4px; }
+  .tbar > i { display: block; height: 100%; background: var(--promising); border-radius: 3px; transition: width .4s; }
+  .tc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+  .tc-hint { font-size: 12px; color: var(--ink-soft); }
+  .verdict { display: flex; gap: 6px; }
+  .vbtn { border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; color: var(--ink); }
+  .vbtn.good { color: var(--core); } .vbtn.same { color: var(--ink-soft); } .vbtn.bad { color: var(--skip); }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .addchip { border: 1px dashed var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; font-size: 12.5px; font-weight: 600;
+    padding: 7px 12px; border-radius: 999px; transition: all .15s; }
+  .addchip:hover { color: var(--accent); border-color: var(--accent); }
+  .result { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .result.good { color: var(--core); background: color-mix(in srgb, var(--core) 14%, transparent); }
+  .result.same { color: var(--ink-soft); background: var(--surface-2); }
+  .result.bad { color: var(--skip); background: color-mix(in srgb, var(--skip) 14%, transparent); }
+  .linkbtn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12.5px; font-weight: 600; padding: 4px 0; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .search { flex: 1; min-width: 200px; display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 13px; box-shadow: var(--shadow); }
+  .search input { border: none; background: transparent; color: var(--ink); font-family: var(--sans); font-size: 14px; width: 100%; outline: none; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .fbtn { border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; font-size: 12.5px; font-weight: 600;
+    padding: 8px 13px; border-radius: 999px; transition: all .15s; }
+  .fbtn:hover { color: var(--ink); }
+  .fbtn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .fbtn.foryou[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  [data-mode="night"] .fbtn.foryou[aria-pressed="true"] { color: #14131A; }
+  .lb-list { display: flex; flex-direction: column; gap: 1px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+  .row { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center; padding: 13px 16px; border-top: 1px solid var(--line-soft); transition: background .12s; }
+  .row:first-child { border-top: none; }
+  .row:hover { background: var(--surface-2); }
+  .row .rank { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); text-align: right; }
+  .row .rname { font-weight: 550; font-size: 14.5px; display: flex; align-items: center; gap: 7px; }
+  .row .rmeta { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+  .row .whyfit { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+  .cyc { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); border: 1px solid var(--line-soft); border-radius: 5px; padding: 1px 5px; }
+  .tierpill { font-size: 10.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+  .t-core { color: var(--core); background: color-mix(in srgb, var(--core) 14%, transparent); }
+  .t-promising { color: var(--promising); background: color-mix(in srgb, var(--promising) 14%, transparent); }
+  .t-experimental { color: var(--experimental); background: color-mix(in srgb, var(--experimental) 16%, transparent); }
+  .t-skip { color: var(--skip); background: color-mix(in srgb, var(--skip) 14%, transparent); }
+  .scorecell { display: flex; align-items: center; gap: 11px; }
+  .bar { width: 92px; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: 3px; }
+  .bigscore { font-family: var(--mono); font-size: 17px; font-weight: 600; width: 30px; text-align: right; }
+
+  .progress-actions { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .photo { position: relative; border-radius: 13px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); box-shadow: var(--shadow); aspect-ratio: 3/4; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+  .photo .date { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 10px; font-size: 11px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.65)); font-family: var(--mono); }
+  .photo .del { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 8px; border: none; background: rgba(20,19,26,.6); color: #fff; cursor: pointer; font-size: 14px; display: grid; place-items: center; }
+  .empty { text-align: center; padding: 44px 20px; color: var(--ink-soft); border: 1px dashed var(--line); border-radius: 16px; }
+  .empty .big { font-size: 34px; margin-bottom: 10px; }
+  .lightbox { position: fixed; inset: 0; z-index: 60; background: rgba(10,9,14,.85); display: none; place-items: center; padding: 24px; }
+  .lightbox.open { display: grid; }
+  .lightbox img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; box-shadow: var(--shadow); }
+  .card h3 { font-size: 16px; margin-bottom: 8px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--ink-soft); line-height: 1.55; }
+  .takeaways { counter-reset: t; display: flex; flex-direction: column; gap: 12px; }
+  .takeaway { display: flex; gap: 14px; }
+  .takeaway .n { counter-increment: t; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); flex: none; width: 26px; }
+  .takeaway .n::before { content: counter(t, decimal-leading-zero); }
+  .takeaway p { font-size: 13.5px; color: var(--ink); margin: 0; } .takeaway b { color: var(--accent-ink); }
+  .cyclist { display: flex; flex-direction: column; }
+  .cyc-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+  .cyc-row:first-child { border-top: none; }
+  .cyc-row .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--core); flex: none; }
+  .cyc-row .cn { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); width: 26px; flex: none; }
+  .cyc-row .ct { font-size: 13.5px; font-weight: 550; } .cyc-row .cd { font-size: 12.5px; color: var(--ink-soft); }
+  .rubric { display: flex; flex-direction: column; gap: 9px; }
+  .rub-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; font-size: 13.5px; }
+  .rub-row .w { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+  .wbar { grid-column: 1 / -1; height: 5px; background: var(--line-soft); border-radius: 3px; overflow: hidden; }
+  .wbar > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .changelog { display: flex; flex-direction: column; }
+  .clog { display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 13px 0; border-top: 1px solid var(--line-soft); }
+  .clog:first-child { border-top: none; }
+  .clog .cv { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+  .clog .cdate { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  .clog .cnote { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+
+  /* Dashboard */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 15px 12px; box-shadow: var(--shadow); text-align: center; }
+  .stat .s-ico { font-size: 15px; margin-bottom: 6px; }
+  .stat .s-val { font-family: var(--mono); font-size: 24px; font-weight: 600; line-height: 1; }
+  .stat .s-lab { font-size: 11px; color: var(--ink-soft); margin-top: 5px; }
+  #dashBody .card { margin-bottom: 16px; }
+  #dashBody .grid2 { margin-bottom: 16px; }
+  #dashBody .grid2 .card { margin-bottom: 0; }
+  .c-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .c-head .tc-hint { font-size: 12px; }
+  .heatscroll { overflow-x: auto; padding-bottom: 4px; }
+  .gbars { display: flex; flex-direction: column; gap: 13px; }
+  .gbar .gb-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; color: var(--ink-soft); }
+  .gb-track { height: 8px; border-radius: 4px; background: var(--line-soft); overflow: hidden; }
+  .gb-track > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .4s; }
+  .fitbars { display: flex; flex-direction: column; gap: 9px; }
+  .fitseg { font-size: 14px; color: var(--ink-soft); } .fitseg b { color: var(--ink); font-size: 16px; margin: 0 5px 0 3px; }
+  .donutwrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; font-size: 13px; color: var(--ink-soft); }
+  .legend > div { display: flex; align-items: center; gap: 7px; } .legend b { color: var(--ink); margin-left: 2px; }
+  .legend .lg { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .dashphoto { display: flex; gap: 16px; align-items: center; }
+  .dashphoto img { width: 72px; height: 96px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); flex: none; }
+
+  footer.disc { margin-top: 34px; padding: 16px 18px; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px;
+    font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; }
+  footer.disc b { color: var(--ink); }
+
+  .backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(10,9,14,.45); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .backdrop.open { opacity: 1; pointer-events: auto; }
+  .sheet { position: fixed; z-index: 51; left: 50%; bottom: 0; transform: translate(-50%, 100%); width: min(520px, 100%); background: var(--surface);
+    border: 1px solid var(--line); border-bottom: none; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.2);
+    transition: transform .3s cubic-bezier(.2,.7,.2,1); max-height: 88vh; overflow-y: auto; padding: 8px 22px calc(28px + env(safe-area-inset-bottom)); }
+  .sheet.open { transform: translate(-50%, 0); }
+  .sheet .grabber { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 10px auto 16px; }
+  .sheet h2 { font-size: 18px; margin-bottom: 4px; }
+  .sheet .sub { font-size: 13px; color: var(--ink-soft); margin-bottom: 18px; }
+  .set-block { padding: 16px 0; border-top: 1px solid var(--line-soft); }
+  .set-block:first-of-type { border-top: none; }
+  .set-block h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin-bottom: 12px; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; }
+  .set-row .lab { font-size: 14px; font-weight: 500; }
+  .set-row .lab small { display: block; font-weight: 400; color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+  input[type="time"] { font-family: var(--mono); font-size: 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; color: var(--ink); }
+  .switch { position: relative; width: 46px; height: 27px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: var(--line); border-radius: 999px; cursor: pointer; transition: .2s; }
+  .slider::before { content: ""; position: absolute; width: 21px; height: 21px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .switch input:checked + .slider { background: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(19px); }
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+  .seg button { border: none; background: transparent; color: var(--ink-soft); font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .ghostbtn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13px; padding: 9px 14px; border-radius: 10px; cursor: pointer; }
+  .ghostbtn.danger { color: var(--skip); border-color: color-mix(in srgb, var(--skip) 40%, var(--line)); }
+  .ios-hint { font-size: 12.5px; color: var(--ink-soft); background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 11px 13px; line-height: 1.5; }
+
+  /* Intake modal */
+  .modal { position: fixed; z-index: 55; left: 50%; top: 50%; transform: translate(-50%, -47%) scale(.98); opacity: 0; pointer-events: none;
+    width: min(600px, calc(100% - 24px)); max-height: 92vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.28); padding: 22px 22px calc(22px + env(safe-area-inset-bottom));
+    transition: opacity .25s, transform .25s; }
+  .modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+  .modal h2 { font-size: 20px; margin-bottom: 4px; }
+  .modal .msub { font-size: 13px; color: var(--ink-soft); margin-bottom: 6px; }
+  .fld { padding: 15px 0; border-top: 1px solid var(--line-soft); }
+  .fld:first-of-type { border-top: none; }
+  .fld > label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .fld small.help { display: block; color: var(--ink-soft); font-weight: 400; font-size: 12.5px; margin-bottom: 10px; }
+  .optwrap { display: flex; flex-wrap: wrap; gap: 7px; }
+  .optchip { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; font-size: 13px; font-weight: 550;
+    padding: 8px 13px; border-radius: 999px; transition: all .15s; }
+  .optchip:hover { border-color: var(--accent); }
+  .optchip[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  [data-mode="night"] .optchip[aria-pressed="true"] { color: #14131A; }
+  .fzwrap { display: flex; flex-direction: column; gap: 7px; }
+  .fzopt { display: flex; gap: 12px; align-items: baseline; text-align: left; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+    cursor: pointer; padding: 10px 13px; border-radius: 11px; transition: all .15s; }
+  .fzopt:hover { border-color: var(--accent); }
+  .fzopt[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+  [data-mode="night"] .fzopt[aria-pressed="true"] { color: #14131A; }
+  .fzopt .fznum { font-weight: 700; font-size: 13px; flex: none; width: 58px; }
+  .fzopt .fzdesc { font-size: 12.5px; opacity: .9; }
+  .txtin { width: 100%; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; color: var(--ink); font-family: var(--sans); font-size: 14px; }
+  .modal-actions { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 20px; position: sticky; bottom: 0;
+    background: linear-gradient(transparent, var(--surface) 30%); padding-top: 14px; }
+  .modal-actions .right { display: flex; gap: 10px; }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 0 14px 118px; }
+    .hero { grid-template-columns: 1fr; text-align: center; justify-items: center; gap: 16px; }
+    .hero-copy { text-align: left; }
+    .cols, .grid2, .foryou .fy-cols, .donutwrap { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    nav.tabs { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; width: 100%; border-radius: 0; justify-content: space-around; margin: 0;
+      padding: 6px 2px calc(6px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); }
+    nav.tabs button { flex: 1; padding: 9px 1px; font-size: 10.5px; letter-spacing: -.02em; }
+    .row { grid-template-columns: 26px 1fr auto; gap: 10px; }
+    .bar { width: 54px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div><h1>SkinScore</h1><div class="sub" id="brandsub">Evidence-graded daily protocol</div></div>
+      </div>
+      <div class="head-right">
+        <button class="installbtn" id="installBtn" title="Install app">⬇ Install</button>
+        <div class="chip" title="Consecutive days you've completed your anchor steps"><span aria-hidden="true">🔥</span><span class="tnum" id="streak">0</span>&nbsp;day</div>
+        <button class="iconbtn" id="modeBtn" title="Toggle day / night" aria-label="Toggle day or night">☀️</button>
+        <button class="iconbtn" id="gearBtn" title="Settings" aria-label="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-view="today">Today</button>
+      <button role="tab" aria-selected="false" data-view="dashboard">Dashboard</button>
+      <button role="tab" aria-selected="false" data-view="progress">Photos</button>
+      <button role="tab" aria-selected="false" data-view="protocol">Protocol</button>
+      <button role="tab" aria-selected="false" data-view="leaderboard">Ranks</button>
+      <button role="tab" aria-selected="false" data-view="research">Research</button>
+    </nav>
+
+    <section id="today" role="tabpanel">
+      <div id="personalizeSlot"></div>
+      <div class="hero">
+        <div class="dial" aria-hidden="true">
+          <svg width="132" height="132" viewBox="0 0 132 132">
+            <circle cx="66" cy="66" r="58" fill="none" stroke="var(--line-soft)" stroke-width="11"/>
+            <circle id="dialArc" cx="66" cy="66" r="58" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/>
+          </svg>
+          <div class="center"><div class="pct tnum" id="dialPct">0%</div><div class="pctlabel">today</div></div>
+        </div>
+        <div class="hero-copy">
+          <h2 id="greet">Good morning</h2>
+          <div class="when" id="todayDate"></div>
+          <div class="focus"><span aria-hidden="true">🎯</span><span id="focusText"></span></div>
+        </div>
+      </div>
+
+      <div class="barrier" id="barrier"></div>
+
+      <div class="cols">
+        <div class="panel"><div class="panel-head am"><span class="lbl"><span class="glyph">☀️</span> Morning</span><span class="count" id="amCount"></span></div><ul class="items" id="amList"></ul></div>
+        <div class="panel"><div class="panel-head"><span class="lbl"><span class="glyph">🌙</span> Evening</span><span class="count" id="pmCount"></span></div><ul class="items" id="pmList"></ul></div>
+      </div>
+
+      <div class="group" id="grp-habits"><div class="g-head"><span class="g-title"><span aria-hidden="true">🧬</span> Daily habits <span class="g-sub" id="habitsCount"></span></span><span class="caret">▾</span></div><div class="g-body"><div class="panel"><ul class="items" id="habitList"></ul></div></div></div>
+      <div class="group" id="grp-trials"><div class="g-head"><span class="g-title"><span aria-hidden="true">🧪</span> Trials <span class="g-sub">one change at a time</span></span><span class="caret">▾</span></div><div class="g-body" id="trialsBody"></div></div>
+      <div class="group collapsed" id="grp-week"><div class="g-head"><span class="g-title"><span aria-hidden="true">📅</span> This week <span class="g-sub" id="weekCount"></span></span><span class="caret">▾</span></div><div class="g-body"><div class="panel"><ul class="items" id="weekList"></ul></div></div></div>
+    </section>
+
+    <section id="dashboard" role="tabpanel" hidden>
+      <div class="eyebrow">Where you are</div>
+      <p class="lede" style="margin-bottom:18px">Your adherence, streaks, personalization, and the research base at a glance.</p>
+      <div id="dashBody"></div>
+    </section>
+
+    <section id="progress" role="tabpanel" hidden>
+      <div class="eyebrow">Track your skin</div>
+      <p class="lede">Photos in consistent lighting are the honest way to see whether your routine is working over weeks and months — memory isn't reliable. Stored only on this device.</p>
+      <div class="progress-actions"><button class="primary" id="addPhoto"><span aria-hidden="true">📷</span> Add photo</button>
+        <input type="file" id="photoInput" accept="image/*" capture="user" hidden><span class="tc-hint" id="photoCount"></span></div>
+      <div id="photoHost"></div>
+    </section>
+
+    <section id="protocol" role="tabpanel" hidden>
+      <div class="eyebrow">The routine</div>
+      <p class="thesis">Prevention beats correction — and it's cheap. Protect what you have first; correct second.</p>
+      <p class="lede">The full protocol built from the leaderboard. When your profile is set, each item shows a
+        🟢 good-fit / 🟡 careful / 🔴 avoid flag for you. “Trial” items are worth testing one at a time.</p>
+      <div id="protocolBody"></div>
+    </section>
+
+    <section id="leaderboard" role="tabpanel" hidden>
+      <div class="eyebrow">The scoreboard</div>
+      <p class="lede">All 90 interventions on one honest scale. SkinScore = evidence 30% · impact 25% · safety 20% · effort 15% · cost 10%. Filter by tier, or by what fits you.</p>
+      <div class="toolbar"><div class="search"><span aria-hidden="true" style="opacity:.5">🔍</span><input id="lbSearch" type="search" placeholder="Search… (retinoid, omega-3, sauna)" aria-label="Search interventions"></div></div>
+      <div class="filters" id="lbFilters">
+        <button class="fbtn foryou" aria-pressed="false" data-tier="foryou">★ For you</button>
+        <button class="fbtn" aria-pressed="true" data-tier="all">All 90</button>
+        <button class="fbtn" aria-pressed="false" data-tier="Core">Core</button>
+        <button class="fbtn" aria-pressed="false" data-tier="Promising">Promising</button>
+        <button class="fbtn" aria-pressed="false" data-tier="Experimental">Experimental</button>
+        <button class="fbtn" aria-pressed="false" data-tier="Skip">Skip</button>
+      </div>
+      <div class="lb-list" id="lbList"></div>
+    </section>
+
+    <section id="research" role="tabpanel" hidden>
+      <div class="eyebrow">The research console</div>
+      <p class="thesis">A living project. Each cycle deep-dives one domain, scores every intervention, and folds the winners into the protocol.</p>
+      <p class="lede">First pass complete: 9 cycles, 90 interventions scored (26 Core · 49 Promising · 14 Experimental · 1 Skip). A weekly scheduled task now <em>deepens</em> the shallowest cycle rather than adding new ones.</p>
+      <div class="sectionhead"><h2>What the whole project is really saying</h2></div>
+      <div class="card" style="margin-bottom:24px"><div class="takeaways" id="takeaways"></div></div>
+      <div class="grid2">
+        <div class="card"><h3>Research cycles</h3><div class="cyclist" id="cyclist"></div></div>
+        <div class="card"><h3>How SkinScore is weighted</h3><div class="rubric" id="rubric"></div>
+          <p style="margin-top:14px">Tiers: <b style="color:var(--core)">Core 75+</b> · <b style="color:var(--promising)">Promising 55–74</b> · <b style="color:var(--experimental)">Experimental 35–54</b> · <b style="color:var(--skip)">Skip &lt;35</b>.</p></div>
+      </div>
+      <div class="sectionhead"><h2>Changelog</h2></div>
+      <div class="tc-hint" id="dataStamp" style="margin:-8px 0 12px"></div>
+      <div class="card"><div class="changelog" id="changelog"></div></div>
+    </section>
+
+    <footer class="disc">
+      <b>Educational evidence synthesis — not medical advice.</b> Personalized flags are decision-support based on the profile
+      you enter, not a diagnosis. Prescriptions, procedures, medications, pregnancy, and supplement stacks should be confirmed
+      with a qualified dermatologist or physician. Your profile, check-ins, and photos are stored only in this browser.
+    </footer>
+  </div>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- Settings sheet -->
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="grabber"></div>
+    <h2>Settings</h2><div class="sub">Everything stays on this device.</div>
+
+    <div class="set-block">
+      <h4>Personalization</h4>
+      <div id="profileSummary"></div>
+    </div>
+    <div class="set-block">
+      <h4>Reminders</h4>
+      <div class="set-row"><span class="lab">Daily reminders <small>Nudge for your AM &amp; PM routine</small></span><label class="switch"><input type="checkbox" id="remindOn"><span class="slider"></span></label></div>
+      <div class="set-row"><span class="lab">Morning</span><input type="time" id="remAm" value="08:00"></div>
+      <div class="set-row"><span class="lab">Evening</span><input type="time" id="remPm" value="21:00"></div>
+      <p class="ios-hint">Reminders fire while the app is installed and running in the background. Some browsers won't deliver them when the app is fully closed — installing to your home screen makes them most reliable.</p>
+    </div>
+    <div class="set-block">
+      <h4>Appearance</h4>
+      <div class="set-row"><span class="lab">Theme</span><div class="seg" id="themeSeg">
+        <button data-theme="auto" aria-pressed="true">Auto</button><button data-theme="day" aria-pressed="false">Day</button><button data-theme="night" aria-pressed="false">Night</button></div></div>
+    </div>
+    <div class="set-block" id="installBlock">
+      <h4>Install</h4>
+      <div class="set-row"><span class="lab">Add to home screen <small>Use it like a native app, offline</small></span><button class="ghostbtn" id="installBtn2">Install</button></div>
+      <p class="ios-hint" id="iosHint" hidden>On iPhone/iPad: tap the <b>Share</b> icon in Safari, then <b>Add to Home Screen</b>.</p>
+    </div>
+    <div class="set-block">
+      <h4>Your data</h4>
+      <div class="set-row"><span class="lab">Export a backup <small>Download your profile, check-ins &amp; trials as JSON</small></span><button class="ghostbtn" id="exportBtn">Export</button></div>
+      <div class="set-row"><span class="lab">Reset everything <small>Clears all local data &amp; photos</small></span><button class="ghostbtn danger" id="resetBtn">Reset</button></div>
+    </div>
+  </div>
+
+  <!-- Intake modal -->
+  <div class="modal" id="intake" role="dialog" aria-modal="true" aria-label="Your skin profile">
+    <h2>Your skin profile</h2>
+    <p class="msub">Used to flag every intervention 🟢 / 🟡 / 🔴 for you and tune your routine. All optional, all on-device. Not a diagnosis.</p>
+    <div id="intakeBody"></div>
+    <div class="modal-actions">
+      <button class="linkbtn" id="intakeClear">Clear profile</button>
+      <div class="right"><button class="ghostbtn" id="intakeCancel">Cancel</button><button class="primary" id="intakeSave">Save profile</button></div>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox"><img id="lightboxImg" alt="Progress photo"></div>
+
+<script>
+(function () {
+  "use strict";
+  function byId(id){ return document.getElementById(id); }
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  /* ---------------- DATA ---------------- */
+  var routine = {
+    am: [
+      {id:'am-cleanse', name:'Gentle cleanse', note:'or just rinse if skin is dry — avoid over-stripping', score:81, anchor:true, attrs:[]},
+      {id:'am-vitc', name:'Vitamin C serum', note:'L-ascorbic acid — antioxidant, supports the SPF', score:75, tag:'trial', active:true, attrs:['pigment','antioxidant','strong_active_mild']},
+      {id:'am-moist', name:'Ceramide moisturizer', note:'barrier support', score:82, anchor:true, attrs:['barrier','eczema']},
+      {id:'am-spf', name:'Broad-spectrum SPF 30+', note:'the single highest-value step; reapply if outdoors', score:95, anchor:true, attrs:['sun','universal']}
+    ],
+    pm: [
+      {id:'pm-cleanse', name:'Cleanse', note:"remove SPF + the day's pollution particulates", score:76, anchor:true, attrs:[]},
+      {id:'pm-retinoid', name:'A retinoid', note:'tretinoin (Rx) / retinol / adapalene — start 2×/wk, build up', score:84, tag:'rx', active:true, attrs:['retinoid','photosensitizing','pregnancy_avoid','anti_aging','strong_active']},
+      {id:'pm-niacin', name:'Niacinamide', note:'barrier + tone + oil; pairs with almost everything', score:82, attrs:['barrier','pigment','redness','gentle']},
+      {id:'pm-moist', name:'Moisturizer / ceramide barrier', note:'', score:82, anchor:true, attrs:['barrier','eczema']},
+      {id:'pm-acne', name:'Acne actives (if needed)', note:"benzoyl peroxide / azelaic / salicylic — don't stack all at once", score:83, tag:'acne', active:true, attrs:['acne','strong_active']}
+    ],
+    habits: [
+      {id:'h-sun', name:'Sun-protective behavior', note:'shade, hats, UV-blocking clothing, avoid midday peak', score:94, anchor:true, attrs:['sun','universal']},
+      {id:'h-pick', name:"Didn't pick / over-touch my face", note:'', score:83, attrs:['universal']},
+      {id:'h-nosmoke', name:'No smoking', note:'', score:86, attrs:['universal']},
+      {id:'h-lowgi', name:'Low-glycemic eating', note:'fewer sugar spikes — targets glycation + acne', score:81, attrs:['acne','diet']},
+      {id:'h-polyphenol', name:'Polyphenol-rich foods', note:'green tea, cocoa, tomato, colorful produce', score:79, attrs:['diet','antioxidant']},
+      {id:'h-stress', name:'Managed stress', note:'cortisol drives collagen loss + barrier damage', score:78, attrs:['universal']},
+      {id:'h-sleep', name:'On track for 7–9 h sleep', note:'consistent schedule', score:80, anchor:true, attrs:['universal']}
+    ],
+    week: [
+      {id:'w-led', name:'Red / NIR LED session', note:'a few sessions/week — modest but real for collagen', score:74, tag:'trial', attrs:['device','anti_aging']},
+      {id:'w-exfol', name:'Gentle exfoliation (≤1–2×/wk)', note:"don't over-do it — over-exfoliation damages the barrier", score:68, tag:'trial', active:true, attrs:['exfoliant','photosensitizing','strong_active']},
+      {id:'w-exercise', name:'Aerobic exercise', note:'aim for several sessions', score:70, attrs:['universal']},
+      {id:'w-omega3', name:'Oily fish / omega-3s', note:'a few times a week', score:71, attrs:['diet']},
+      {id:'w-soak', name:'Soak-and-seal (if bathing)', note:'short, lukewarm, moisturize immediately after', score:84, attrs:['eczema','barrier']}
+    ]
+  };
+  // Pregnancy-safe swap surfaced when a retinoid is contraindicated
+  var azelaicSwap = {id:'pm-azelaic', name:'Azelaic acid (retinoid alternative)', note:'pregnancy-safe — treats acne, pigment & redness', score:75, injected:true, attrs:['acne','azelaic','pregnancy_safe','pigment','redness']};
+
+  var trialCatalog = [
+    {id:'t-vitc', name:'Vitamin C serum', weeks:8}, {id:'t-led', name:'Red / NIR LED', weeks:8},
+    {id:'t-exfol', name:'Gentle exfoliation (AHA/BHA)', weeks:6}, {id:'t-azelaic', name:'Azelaic acid', weeks:8},
+    {id:'t-collagen', name:'Collagen peptides (oral)', weeks:8}, {id:'t-omega3', name:'Omega-3 supplement', weeks:12},
+    {id:'t-carotenoid', name:'Carotenoids / Polypodium', weeks:12}, {id:'t-zinc', name:'Zinc (acne)', weeks:8}
+  ];
+
+  var protocolSections = [
+    {title:'Diet — ongoing', glyph:'🥗', items:[
+      {name:'Low glycemic load', note:'fewer sugar spikes; targets glycation + acne', score:81},
+      {name:'Polyphenol-rich foods', note:'green tea, cocoa flavanols, tomatoes/lycopene, colorful produce', score:79},
+      {name:'Mediterranean pattern + fermented foods + fiber', note:'for the gut–skin axis', score:73},
+      {name:'Oily fish / omega-3s', note:'a few times a week', score:71},
+      {name:'Limit high-AGE cooking, added sugar, alcohol', note:'deep-fried, char-grilled', score:72},
+      {name:'Reduce dairy / skim milk', note:'acne-prone — trial it', score:75, tag:'acne'}]},
+    {title:'Supplements — evidence-gated (optional)', glyph:'💊', items:[
+      {name:'Vitamin D', note:"if you're deficient — test first", score:74},
+      {name:'Oral nicotinamide 500 mg 2×/day', note:'ONLY if high skin-cancer risk; discuss with a dermatologist', score:89, tag:'caution'},
+      {name:'Collagen peptides', note:'reasonable trial, modest effect', score:71, tag:'trial'},
+      {name:'Mixed carotenoids / Polypodium leucotomos', note:'photoprotection adjunct', score:71, tag:'trial'},
+      {name:'Omega-3', note:'', score:69, tag:'trial'}, {name:'Zinc', note:'if acne-prone', score:71, tag:'trial'},
+      {name:'Skip: biotin', note:'does nothing for normal skin; can corrupt lab tests', score:45, tag:'caution'}]},
+    {title:'Procedures — discuss with a dermatologist', glyph:'🏥', items:[
+      {name:'Botulinum toxin', note:'real, RCT-backed correction', score:79}, {name:'Hyaluronic acid fillers', note:'', score:75},
+      {name:'Fractional laser', note:'', score:72}, {name:'Microneedling ± RF', note:'', score:70}, {name:'IPL for redness / pigment', note:'', score:68}]},
+    {title:'Frontier watchlist — NOT recommended yet', glyph:'🔬', items:[
+      {name:'Topical rapamycin', note:'senomorphic — evidence maturing', score:60}, {name:'Topical growth factors (EGF)', note:'', score:54},
+      {name:'Senolytics (dasatinib + quercetin)', note:'', score:50}, {name:'Exosome therapy', note:'sold years ahead of its evidence', score:43},
+      {name:'Stem-cell cosmetics', note:'', score:43}, {name:'Nutrigenomic / at-home genetic tests', note:'', score:40}]},
+    {title:'Explicitly not worth it', glyph:'❌', items:[
+      {name:'Whole-body cryotherapy for skin', note:'the only Skip — unproven, carries real risk', score:27, tag:'caution'},
+      {name:'Saunas / steam / ice facials for aging', note:'fine for wellbeing, not for collagen', score:47, tag:'caution'}]}
+  ];
+
+  var board = [
+    [1,'Broad-spectrum sunscreen (topical)','C6',95],[2,'Behavioral sun protection (shade, clothing, hats, timing)','C8',94],
+    [3,'Oral nicotinamide (skin-cancer prevention, high-risk only)','C5',89],[4,'Consistent simple routine (adherence itself)','C6',86],
+    [5,'Smoking cessation','C8',86],[6,'Soak-and-seal bathing technique','C7',84],[7,'Tretinoin / prescription retinoid','C2·C6',84],
+    [8,'Avoiding face-picking / over-touching','C8',83],[9,'Benzoyl peroxide (acne)','C6',83],[10,'Ceramide / barrier moisturizer','C6',82],
+    [11,'Topical niacinamide','C6',82],[12,'Avoid over-exfoliation (habit)','C6',81],[13,'Low-glycemic-load diet','C4',81],
+    [14,'Sleep quantity & quality','C8',80],[15,'Botulinum toxin','C2',79],[16,'Polyphenol/flavonoid intake (green tea, cocoa, tomato)','C4',79],
+    [17,'Psychological stress reduction','C8',78],[18,'Adapalene 0.1% (OTC retinoid)','C6',77],[19,'Air-pollution mitigation (evening cleanse, antioxidants)','C8',76],
+    [20,'Azelaic acid','C6',75],[21,'Bath temperature/duration (lukewarm, short)','C7',75],[22,'Hyaluronic acid fillers','C2',75],
+    [23,'Reducing dairy / skim milk (acne)','C4',75],[24,'Retinol (OTC)','C6',75],[25,'Salicylic acid (BHA)','C6',75],
+    [26,'Topical vitamin C (L-ascorbic acid)','C6',75],[27,'Red/NIR photobiomodulation (LED)','C3',74],[28,'Vitamin D (deficiency correction)','C5',74],
+    [29,'Fermented foods + fiber (gut–skin)','C4',73],[30,'Mediterranean dietary pattern','C4',73],[31,'Added-sugar / SSB reduction','C4',72],
+    [32,'Alcohol moderation (lifestyle)','C8',72],[33,'Alcohol reduction (diet)','C4',72],[34,'Fractional lasers (CO2/Fraxel)','C2',72],
+    [35,'Minimizing high-AGE cooking','C4',72],[36,'GHK-Cu copper peptide (topical)','C2',71],[37,'Hydrolyzed collagen peptides (oral)','C5',71],
+    [38,'Omega-3 from oily fish (diet)','C4',71],[39,'Oral carotenoids (lycopene/mixed)','C5',71],[40,'Polypodium leucotomos (oral)','C5',71],
+    [41,'Topical HA / humectants','C6',71],[42,'Zinc (acne, oral)','C5',71],[43,'Blue-light LED (acne)','C3',70],
+    [44,'Microneedling','C2',70],[45,'RF microneedling','C2',70],[46,'Regular aerobic exercise','C8',70],
+    [47,'Water intake / hydration','C4',70],[48,'Bathing frequency (if sealed)','C7',69],[49,'Omega-3 supplements','C5',69],
+    [50,'AHA (glycolic/lactic)','C6',68],[51,'Colloidal oatmeal bath (eczema)','C7',68],[52,'IPL (intense pulsed light)','C2',68],
+    [53,'Astaxanthin (oral)','C5',67],[54,'Maintaining indoor humidity','C8',67],[55,'Oral vitamin C','C5',67],
+    [56,'Professional / in-office LED','C3',67],[57,'Matrixyl (palmitoyl peptides)','C2',66],[58,'Oral hyaluronic acid','C5',66],
+    [59,'Dead Sea climatotherapy (psoriasis)','C7',65],[60,'Dilute bleach baths (mod-severe AD, supervised)','C7',65],
+    [61,'Dead Sea / Mg-rich bath salts','C7',64],[62,'Back-sleeping ("sleep wrinkles")','C8',63],[63,'Topical estrogen (skin)','C2',63],
+    [64,'Oral ceramides / phytoceramides','C5',62],[65,'Thermal spring water sprays','C7',60],[66,'Topical rapamycin (senomorphic)','C2',60],
+    [67,'Balneotherapy (thermal-spring baths)','C7',59],[68,'Platelet-rich plasma (PRP)','C2',59],[69,'Polynucleotides / PDRN (salmon DNA)','C2',59],
+    [70,'Topical peptides (general)','C6',58],[71,'Silk pillowcase','C8',57],[72,'Oral probiotics','C5',56],
+    [73,'Resveratrol (oral)','C5',56],[74,'Double cleansing (habit)','C6',55],[75,'Epsom / magnesium baths','C7',55],
+    [76,'Topical EGF (growth factor)','C2',54],[77,'Water softeners (for established eczema)','C7',54],[78,'Cold showers / cold-water immersion','C3',52],
+    [79,'Senolytics (dasatinib + quercetin)','C2',50],[80,'Facial steaming','C3',48],[81,'Finnish / dry sauna (for skin)','C3',47],
+    [82,'Infrared sauna (for skin)','C3',47],[83,'Hot-cold contrast therapy','C3',46],[84,'Biotin (skin, in replete people)','C5',45],
+    [85,'Ice / cold facials, skin icing','C3',45],[86,'Exosome therapy','C2',43],[87,'Stem-cell therapies (cosmetic)','C2',43],
+    [88,'Sulfur springs','C7',41],[89,'Nutrigenomic / at-home genetic tests','C2',40],[90,'Whole-body cryotherapy (for skin)','C3',27]
+  ];
+
+  var takeaways = [
+    'Prevention beats correction, and it’s cheap. The very top of the board is <b>protecting what you already have</b> — sun protection, not smoking, not picking, barrier care, sleep. Mostly free behaviors, not products.',
+    'A small set of correctors genuinely reverse damage. Only <b>topical retinoids</b> and in-clinic <b>botulinum toxin, fillers, and fractional lasers</b> have RCT evidence for changing the aging phenotype itself.',
+    'The “frontier” is sold years ahead of its evidence. Exosomes, stem cells, senolytics, and genetic tests cluster at the <b>bottom</b> — the project’s central irony.',
+    'Diet and lifestyle punch above their weight. Because they score high on safety and cost, low-glycemic eating, polyphenols, and stress reduction reach Core despite modest effect sizes.',
+    'Baths, heat and cold are mostly the wrong tool for aging. Their real evidence is condition-specific (eczema/psoriasis). <b>Heat is counterproductive for collagen</b>; cryotherapy is the only Skip.',
+    'Most supplements are Promising-at-best; one is a myth. Oral nicotinamide is the lone standout — for skin-cancer prevention only. <b>Biotin does nothing</b> for normal skin.'
+  ];
+  var cycles = [
+    ['1','Biology of skin aging','Barrier, collagen, glycation, senescence, inflammaging'],['2','Frontier medical & genetic','Retinoids, peptides, exosomes, lasers, injectables, senolytics'],
+    ['3','Light, heat & cold','Photobiomodulation, LED, IPL, saunas, cold exposure'],['4','Diet & the gut–skin axis','Glycemic load, dairy, omega-3s, polyphenols, microbiome'],
+    ['5','Supplements & nutraceuticals','Collagen, oral vit C, niacinamide, astaxanthin, vit D, zinc'],['6','Topical actives & routine','What works, minimalism, barrier care, the habit stack'],
+    ['7','Baths, minerals & hydrotherapy','Balneotherapy, salts, thermal springs, bathing habits'],['8','Lifestyle habits','Sleep, stress, exercise, smoking, alcohol, pollution, sun']
+  ];
+  var rubric = [['Evidence strength',30],['Impact (effect size)',25],['Safety',20],['Effort & adherence',15],['Cost',10]];
+  var changelog = [
+    {v:'v1.1', date:'2026-07-09', note:'First pass of Cycles 2–9 completed — 90 interventions scored (26 Core · 49 Promising · 14 Experimental · 1 Skip). Protocol populated. Weekly task repurposed to deepen the shallowest cycle each week.'},
+    {v:'v1.0', date:'2026-07-09', note:'Project chartered. SkinScore defined. Cycle 1 completed. Weekly cadence scheduled (Cycle 2 onward).'}
+  ];
+
+  function tierOf(s){ return s>=75?'Core':s>=55?'Promising':s>=35?'Experimental':'Skip'; }
+  function tierColor(t){ return {Core:'var(--core)',Promising:'var(--promising)',Experimental:'var(--experimental)',Skip:'var(--skip)'}[t]; }
+
+  /* Derive attributes from an intervention name (for board + protocol items) */
+  function attrsFromName(name){
+    var n = name.toLowerCase(), a = [];
+    function has(){ for(var i=0;i<arguments.length;i++){ if(n.indexOf(arguments[i])>=0) return true; } return false; }
+    function add(){ for(var i=0;i<arguments.length;i++){ if(a.indexOf(arguments[i])<0) a.push(arguments[i]); } }
+    if(has('retinoid','tretinoin','retinol','adapalene','tazarotene')){ add('retinoid','photosensitizing','pregnancy_avoid','anti_aging','strong_active'); }
+    if(has('aha','glycolic','lactic','salicylic','exfoliat','peel')){ add('exfoliant','photosensitizing','strong_active'); if(has('salicylic')) add('acne'); }
+    if(has('benzoyl','blue-light','blue light')){ add('acne','strong_active'); }
+    if(has('azelaic')){ add('azelaic','pregnancy_safe','acne','pigment','redness'); }
+    if(has('dairy')){ add('acne','diet'); }
+    if(has('vitamin c','ascorbic','niacinamide')){ add('pigment'); }
+    if(has('niacinamide','ceramide','barrier','moisturi','humectant','hyaluronic','ha /','emollient')){ add('barrier'); }
+    if(has('niacinamide','azelaic','ipl','thermal spring','estrogen','rosacea')){ add('redness'); }
+    if(has('ceramide','oatmeal','bleach bath','soak-and-seal','colloidal','climatotherapy','balneo','emollient','phytoceramide')){ add('eczema'); }
+    if(has('sunscreen','sun protection','spf','photoprotect')){ add('sun','universal'); }
+    if(has('carotenoid','polypodium','astaxanthin','lycopene')){ add('photoprotective_supplement','oral_supplement'); }
+    if(has('botulinum','filler','laser','microneedling','prp','platelet','ipl','rf ','polynucleotide','pdrn','peel')){ add('procedure','expensive'); }
+    if(has('ipl','intense pulsed')){ add('ipl','light_energy'); }
+    if(has('laser','fraxel','co2')){ add('light_energy'); if(has('co2','ablative')) add('ablative'); }
+    if(has('hydroquinone')){ add('hydroquinone','pigment','strong_active'); }
+    if(has('exosome','stem-cell','stem cell','growth factor','egf','senolytic','rapamycin','nutrigenomic','genetic test')){ add('frontier','expensive'); }
+    if(has('sauna','steam','hot-cold','infrared','thermal')){ add('heat'); }
+    if(has('cryotherapy','cold shower','cold-water','ice ','icing','cold facial')){ add('cold'); }
+    if(has('cryotherapy')){ add('avoid_always'); }
+    if(has('oral','supplement','collagen','omega','probiotic','resveratrol','biotin','zinc','ceramides','hyaluronic acid') && !has('topical')){ add('oral_supplement'); }
+    if(has('oral nicotinamide','nicotinamide (skin-cancer')){ add('nicotinamide_high_dose'); }
+    if(has('biotin')){ add('biotin_myth'); }
+    if(has('vitamin d')){ add('vitd'); }
+    if(has('low-glycemic','low glycemic','added-sugar','sugar')){ add('acne','diet'); }
+    if(has('exercise','sleep','stress','smoking','pollution','picking','routine','hydration','water intake','humidity','pillowcase','back-sleeping','alcohol')){ add('universal'); }
+    return a;
+  }
+
+  /* ---------------- FIT ENGINE ---------------- */
+  function has(list, k){ return list && list.indexOf(k) >= 0; }
+  function pget(){ return state.profile || null; }
+  function hasProfile(){ return !!state.profile; }
+
+  // Returns {flag:'good'|'caution'|'avoid'|null, reason:'...'}
+  function fitFor(item){
+    var P = pget(); if(!P) return {flag:null, reason:''};
+    var A = item.attrs || attrsFromName(item.name || '');
+    var conc = P.concerns || [], cond = P.conditions || [], hlth = P.health || [];
+    var preg = has(hlth,'pregnant') || has(hlth,'breastfeeding');
+    var avoid = [], caution = [], good = [];
+
+    var fz = P.fitzpatrick || 0;
+    // ---- AVOID (hard) ----
+    if(has(A,'avoid_always')) avoid.push('The project’s only Skip — unproven and carries real risk.');
+    if(preg && has(A,'pregnancy_avoid')) avoid.push('Retinoids are advised against in pregnancy/breastfeeding — use azelaic acid instead, and confirm with your clinician.');
+    if(preg && has(A,'hydroquinone')) avoid.push('Hydroquinone is absorbed systemically and conventionally avoided in pregnancy/breastfeeding — azelaic acid or niacinamide are safer for pigment.');
+    if(has(hlth,'isotretinoin') && has(A,'strong_active')) avoid.push('On oral isotretinoin your skin barrier is fragile — hold extra strong actives; follow your prescriber.');
+    if(has(hlth,'isotretinoin') && has(A,'procedure')) avoid.push('On or shortly after an isotretinoin course, resurfacing/energy procedures carry scarring risk — wait ~6 months and confirm with a clinician.');
+    if(fz>=5 && has(A,'ipl')) avoid.push('IPL is high-risk on richly pigmented skin (burns, dyspigmentation) — ask a specialist in skin of colour about melanin-selective options like Nd:YAG.');
+
+    // ---- CAUTION ----
+    if(preg && has(A,'exfoliant')) caution.push('In pregnancy, low-strength leave-on AHA/BHA is generally fine, but avoid peels and high-strength acids — confirm the product with your clinician.');
+    if(preg && has(A,'procedure')) caution.push('Elective cosmetic procedures are usually deferred in pregnancy/breastfeeding — discuss timing with your clinician.');
+    if(preg && has(A,'oral_supplement')) caution.push('Supplements aren’t routinely studied in pregnancy — clear any oral supplement with your clinician first.');
+    if(preg && has(A,'acne') && has(A,'strong_active')) caution.push('In pregnancy prefer azelaic acid or benzoyl peroxide over salicylic peels — confirm your acne actives with your clinician.');
+    if(has(hlth,'isotretinoin') && has(A,'photosensitizing')) caution.push('Isotretinoin itself increases sun sensitivity and dryness — go gentle and be strict with SPF.');
+    if(has(hlth,'photosensitizing_med') && has(A,'light_energy')) caution.push('A photosensitizing medication raises burn/blistering risk from light-based procedures — clear it with your provider first.');
+    if(has(hlth,'photosensitizing_med') && has(A,'photosensitizing')) caution.push('You’re on a photosensitizing medication — this raises sun sensitivity further; SPF is non-negotiable.');
+    if(has(hlth,'immunocompromised') && has(A,'strong_active')) caution.push('Immunosuppression raises infection risk from barrier-disrupting actives — introduce slowly and confirm with a clinician.');
+    if(fz>=4 && has(A,'ipl')) caution.push('IPL carries higher pigment-shift risk on deeper skin tones — use an experienced operator and conservative settings, or a melanin-selective laser.');
+    if(fz>=4 && has(A,'ablative')) caution.push('Ablative resurfacing has high post-inflammatory hyperpigmentation risk in richer skin tones — insist on an operator experienced with your skin type.');
+    if(fz>=4 && (has(A,'exfoliant')||has(A,'procedure')||has(A,'strong_active'))) caution.push('Deeper skin tones have higher post-inflammatory pigmentation risk — start low and slow, patch-test, and be strict with SPF.');
+    if(has(A,'hydroquinone')) caution.push('Prescription-grade lightener — long or unsupervised use risks ochronosis and rebound pigmentation; use only in short, clinician-supervised cycles.');
+    if(P.skinType==='sensitive' && has(A,'strong_active')) caution.push('Sensitive skin — introduce slowly, buffer with moisturizer, and stop if it stings.');
+    if(has(A,'photosensitizing') && (P.sun==='high'||has(hlth,'high_skin_cancer_risk')||has(cond,'skin_cancer_hx'))) caution.push('This raises UV sensitivity and you’re higher UV-risk — pair it with daily SPF without fail.');
+    if(P.budget==='minimal' && has(A,'expensive')) caution.push('Higher cost — optional; the free and cheap Core steps deliver most of the benefit.');
+    if(P.effort==='minimal' && (has(A,'device')||has(A,'procedure')||has(A,'oral_supplement'))) caution.push('Adds friction — nail the simple core routine before adding this.');
+    if(has(A,'heat') && has(conc,'wrinkles')) caution.push('Heat accelerates collagen breakdown — fine for wellbeing, not for anti-aging.');
+    if(has(A,'nicotinamide_high_dose') && !has(hlth,'high_skin_cancer_risk') && !has(cond,'skin_cancer_hx')) caution.push('Only indicated at high skin-cancer risk — not a general anti-aging pill.');
+    if(has(A,'biotin_myth')) caution.push('No benefit for normal skin and can distort blood tests.');
+    if(has(A,'procedure') && (has(hlth,'blood_thinners')||has(hlth,'immunocompromised'))) caution.push('Blood thinners / immune status raise procedure risk — clear it with your doctor first.');
+
+    // ---- GOOD ----
+    if(has(A,'sun')){ good.push((P.sun==='high'||P.fitzpatrick<=2) ? 'Top priority given your sun exposure / fair skin.' : 'Directly supports your sun protection — the #1 lever.'); }
+    if(preg && has(A,'pregnancy_safe')) good.push('Pregnancy-safe way to treat acne, pigment & redness.');
+    if(has(conc,'acne') && has(A,'acne')) good.push('Targets your acne concern.');
+    if(has(conc,'pigment') && has(A,'pigment')) good.push('Targets your uneven tone / dark spots.');
+    if(has(conc,'redness') && has(A,'redness')) good.push('Targets your redness / rosacea.');
+    if(has(conc,'dryness') && has(A,'barrier')) good.push('Supports your dry / compromised barrier.');
+    if(has(conc,'wrinkles') && has(A,'anti_aging')) good.push('One of the few proven anti-aging actives.');
+    if(has(cond,'eczema') && has(A,'eczema')) good.push('Backed for eczema — soothes and seals the barrier.');
+    if(has(cond,'psoriasis') && has(A,'eczema')) good.push('Barrier / soak care helps psoriasis-prone skin.');
+    if(P.sun==='high' && has(A,'photoprotective_supplement')) good.push('A useful oral adjunct for heavy sun exposure.');
+    if((P.climate==='dry'||P.climate==='cold') && has(A,'barrier')) good.push('Your dry climate makes barrier care especially valuable.');
+
+    if(avoid.length) return {flag:'avoid', reason:avoid[0]};
+    if(caution.length) return {flag:'caution', reason:caution[0]};
+    if(good.length) return {flag:'good', reason:good[0]};
+    return {flag:null, reason:''};
+  }
+  function fitDot(flag){ return flag==='good'?'🟢':flag==='caution'?'🟡':flag==='avoid'?'🔴':''; }
+
+  /* ---------------- STATE ---------------- */
+  var LS = 'skinscore-state-v1';
+  var state = load();
+  state.checks = state.checks || {}; state.trials = state.trials || {};
+  state.barrier = state.barrier || {recovery:false, since:null};
+  state.settings = state.settings || {};
+  if(state.settings.theme == null) state.settings.theme = state.mode || 'auto';
+  state.settings.remind = state.settings.remind || {on:false, am:'08:00', pm:'21:00'};
+  if(state.profile === undefined) state.profile = null;
+  function load(){ try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch(e){ return {}; } }
+  function save(){ try { localStorage.setItem(LS, JSON.stringify(state)); } catch(e){} }
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function keyOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function todayKey(){ return keyOf(new Date()); }
+  function weekKey(){ var d=new Date(); var day=(d.getDay()+6)%7; var m=new Date(d); m.setDate(d.getDate()-day); return 'W'+keyOf(m); }
+  function parseKey(k){ var p=k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function daysSince(k){ var ms = new Date().setHours(0,0,0,0) - parseKey(k).setHours(0,0,0,0); return Math.max(0, Math.round(ms/86400000)); }
+  function dayChecks(k){ state.checks[k] = state.checks[k] || {}; return state.checks[k]; }
+  function isDone(id, weekly){ return !!dayChecks(weekly?weekKey():todayKey())[id]; }
+  function toggle(id, weekly){ var c=dayChecks(weekly?weekKey():todayKey()); if(c[id]) delete c[id]; else c[id]=1; save(); }
+
+  var anchorIds = routine.am.concat(routine.pm, routine.habits).filter(function(i){return i.anchor;}).map(function(i){return i.id;});
+  function anchorsDone(k){ var c=state.checks[k]||{}; return anchorIds.every(function(id){ return c[id]; }); }
+  function computeStreak(){ var d=new Date(), n=0; if(!anchorsDone(keyOf(d))) d.setDate(d.getDate()-1); while(anchorsDone(keyOf(d))){ n++; d.setDate(d.getDate()-1); } return n; }
+
+  /* ---------------- TODAY MODEL ---------------- */
+  var todayModel = {am:[],pm:[],habits:[],week:[]};
+  function decorate(list, weekly){
+    return list.map(function(it){
+      var fit = fitFor(it);
+      var paused = fit.flag==='avoid' || (state.barrier.recovery && it.active);
+      var pauseReason = fit.flag==='avoid' ? fit.reason : (state.barrier.recovery && it.active ? 'Paused during barrier recovery — simplify to cleanse · moisturize · SPF.' : '');
+      return {item:it, fit:fit, paused:paused, pauseReason:pauseReason, weekly:!!weekly};
+    });
+  }
+  function fitRank(e){ if(e.paused) return 4; if(e.fit.flag==='good') return 0; if(e.fit.flag==='caution') return 3; return 1; }
+  function orderModel(arr){ return arr.map(function(e,i){return {e:e,i:i};}).sort(function(a,b){ var d=fitRank(a.e)-fitRank(b.e); return d!==0?d:a.i-b.i; }).map(function(x){return x.e;}); }
+  function buildModel(){
+    var pm = routine.pm.slice();
+    var P = pget();
+    if(P){ var preg = has(P.health,'pregnant') || has(P.health,'breastfeeding');
+      var hasAzelaic = has(P.conditions,'has_azelaic'); // never set; placeholder
+      if(preg){ // surface pregnancy-safe alternative right after the (now-paused) retinoid
+        var idx = pm.map(function(x){return x.id;}).indexOf('pm-retinoid');
+        if(idx>=0 && pm.map(function(x){return x.id;}).indexOf('pm-azelaic')<0){ pm.splice(idx+1, 0, azelaicSwap); }
+      }
+    }
+    todayModel.am = orderModel(decorate(routine.am));
+    todayModel.pm = orderModel(decorate(pm));
+    todayModel.habits = orderModel(decorate(routine.habits));
+    todayModel.week = orderModel(decorate(routine.week, true));
+  }
+
+  function tagLabel(t){ return {rx:'Rx', trial:'Trial', caution:'Caution', acne:'Note', paused:'Paused', avoid:'Avoid', pick:'For you'}[t] || t; }
+  function itemRow(entry){
+    var it=entry.item, fit=entry.fit, paused=entry.paused, weekly=entry.weekly;
+    var done = !paused && isDone(it.id, weekly);
+    var li=document.createElement('li'); li.className='item'+(done?' done':'')+(paused?' paused':'');
+    li.tabIndex = paused?-1:0; li.setAttribute('role','checkbox'); li.setAttribute('aria-checked', done);
+    var dot = fit.flag ? '<span class="dotc" title="'+(fit.reason||'').replace(/"/g,'&quot;')+'">'+fitDot(fit.flag)+'</span>' : '';
+    var tag = paused ? '<span class="tag '+(fit.flag==='avoid'?'avoid':'paused')+'">'+(fit.flag==='avoid'?'Avoid':'Paused')+'</span>'
+             : (it.tag ? '<span class="tag '+it.tag+'">'+tagLabel(it.tag)+'</span>' : '');
+    var note = paused ? entry.pauseReason : it.note;
+    li.innerHTML = '<span class="box">'+CHECK+'</span><span class="itxt"><span class="name">'+it.name+'</span>'+
+      (note?'<span class="note">'+note+'</span>':'')+'</span><span class="meta">'+dot+tag+'<span class="score tnum">'+it.score+'</span></span>';
+    if(!paused){
+      var flip=function(){ toggle(it.id, weekly); var d=isDone(it.id, weekly); li.classList.toggle('done',d); li.setAttribute('aria-checked',d); refreshCounts(); };
+      li.addEventListener('click', flip);
+      li.addEventListener('keydown', function(e){ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); flip(); } });
+    }
+    return li;
+  }
+  function fillModel(el, arr){ el.innerHTML=''; arr.forEach(function(e){ el.appendChild(itemRow(e)); }); }
+  function countDone(arr){ return arr.filter(function(e){ return !e.paused && isDone(e.item.id, e.weekly); }).length; }
+  function countActive(arr){ return arr.filter(function(e){ return !e.paused; }).length; }
+
+  function refreshCounts(){
+    var am=countDone(todayModel.am), pm=countDone(todayModel.pm), hb=countDone(todayModel.habits), wk=countDone(todayModel.week);
+    byId('amCount').textContent = am+'/'+countActive(todayModel.am);
+    byId('pmCount').textContent = pm+'/'+countActive(todayModel.pm);
+    byId('habitsCount').textContent = '· '+hb+'/'+countActive(todayModel.habits);
+    byId('weekCount').textContent = '· '+wk+'/'+countActive(todayModel.week);
+    var total = countActive(todayModel.am)+countActive(todayModel.pm)+countActive(todayModel.habits), done = am+pm+hb;
+    var pct = total ? Math.round(100*done/total) : 0;
+    byId('dialPct').textContent = pct+'%';
+    byId('dialArc').style.strokeDashoffset = 364.4*(1-pct/100);
+    byId('streak').textContent = computeStreak();
+  }
+
+  /* ---------------- BARRIER ---------------- */
+  function renderBarrier(){
+    var el=byId('barrier');
+    if(state.barrier.recovery){
+      var d = state.barrier.since ? daysSince(state.barrier.since) : 0;
+      el.className='barrier recovery';
+      el.innerHTML='<span class="q">🩹 Barrier recovery — day '+(d+1)+'<small>Simplify to cleanse · moisturize · SPF for 2–4 weeks. Actives are paused below.</small></span>'+
+        '<span class="acts"><button class="minibtn" id="recoverDone">My skin has recovered</button></span>';
+      byId('recoverDone').addEventListener('click', function(){ state.barrier={recovery:false,since:null}; save(); renderToday(); });
+    } else {
+      el.className='barrier';
+      el.innerHTML='<span class="q">How’s your skin barrier today?<small>Tightness, stinging or flaking means back off the actives.</small></span>'+
+        '<span class="acts"><button class="minibtn" id="barrierOk">All good</button><button class="minibtn warn" id="barrierBad">A bit irritated</button></span>';
+      byId('barrierOk').addEventListener('click', function(){ flash(byId('barrierOk'),'✓ Nice'); });
+      byId('barrierBad').addEventListener('click', function(){ state.barrier={recovery:true, since:todayKey()}; save(); renderToday(); });
+    }
+  }
+  function flash(btn,label){ var t=btn.textContent; btn.textContent=label; btn.disabled=true; setTimeout(function(){ btn.textContent=t; btn.disabled=false; }, 1100); }
+
+  /* ---------------- FOR-YOU / PERSONALIZE SLOT ---------------- */
+  function renderPersonalizeSlot(){
+    var host=byId('personalizeSlot'); host.innerHTML='';
+    if(!hasProfile()){
+      var b=document.createElement('div'); b.className='pbanner';
+      b.innerHTML='<div class="pb-txt"><b>Personalize your protocol</b><small>Add your skin profile — age, tone, conditions, sun exposure — to flag all 90 interventions 🟢/🟡/🔴 for you.</small></div>'+
+        '<button class="primary" id="startIntake">Set up · 2 min</button>';
+      host.appendChild(b); byId('startIntake').addEventListener('click', openIntake);
+      return;
+    }
+    var goods=[], flags=[];
+    ['am','pm','habits','week'].forEach(function(k){ todayModel[k].forEach(function(e){
+      if(e.fit.flag==='good') goods.push(e.item);
+      if(e.fit.flag==='avoid'||e.fit.flag==='caution') flags.push(e);
+    }); });
+    var seen={}, top=[]; goods.sort(function(a,b){return b.score-a.score;}).forEach(function(it){ if(!seen[it.name]){ seen[it.name]=1; top.push(it); } });
+    top=top.slice(0,4);
+    var fyFlags=[], fseen={}; flags.forEach(function(e){ if(!fseen[e.item.name]){ fseen[e.item.name]=1; fyFlags.push(e); } }); fyFlags=fyFlags.slice(0,3);
+
+    var card=document.createElement('div'); card.className='foryou';
+    var chips = summaryChips().slice(0,5).map(function(c){ return '<span class="pchip">'+c+'</span>'; }).join('');
+    var col1 = '<div><h4>Your priorities</h4><ul>'+ (top.length? top.map(function(it){ return '<li><span class="dotc">🟢</span><span>'+it.name+'</span></li>'; }).join('') : '<li><span>Your Core routine — no special promotions.</span></li>') +'</ul></div>';
+    var col2 = '<div><h4>Heads up</h4><ul>'+ (fyFlags.length? fyFlags.map(function(e){ return '<li><span class="dotc">'+fitDot(e.fit.flag)+'</span><span>'+e.item.name+' — '+e.fit.reason+'</span></li>'; }).join('') : '<li><span>Nothing flagged. You’re clear to run the full routine.</span></li>') +'</ul></div>';
+    card.innerHTML='<div class="fy-head"><h3>For you</h3><button class="linkbtn" id="editProfile2">Edit profile</button></div>'+
+      '<div class="pchips" style="margin-bottom:12px">'+chips+'</div><div class="fy-cols">'+col1+col2+'</div>';
+    host.appendChild(card);
+    byId('editProfile2').addEventListener('click', openIntake);
+  }
+
+  function summaryChips(){
+    var P=pget(); if(!P) return []; var c=[];
+    if(P.age) c.push(P.age+' yrs');
+    if(P.fitzpatrick) c.push('Fitzpatrick '+['I','II','III','IV','V','VI'][P.fitzpatrick-1]);
+    if(P.skinType) c.push(cap(P.skinType));
+    (P.concerns||[]).forEach(function(x){ c.push(concLabel(x)); });
+    (P.conditions||[]).forEach(function(x){ c.push(condLabel(x)); });
+    (P.health||[]).forEach(function(x){ c.push(healthLabel(x)); });
+    if(P.sun) c.push(sunLabel(P.sun));
+    if(P.climate) c.push(cap(P.climate)+' climate');
+    return c;
+  }
+  function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+
+  /* ---------------- TRIALS ---------------- */
+  function renderTrials(){
+    var host=byId('trialsBody'); host.innerHTML='';
+    var active = trialCatalog.filter(function(c){ var t=state.trials[c.id]; return t && !t.ended; });
+    var past = trialCatalog.filter(function(c){ var t=state.trials[c.id]; return t && t.ended; });
+    var avail = trialCatalog.filter(function(c){ return !state.trials[c.id] || state.trials[c.id].ended; });
+    var wrap=document.createElement('div'); wrap.className='trials';
+    active.forEach(function(c){
+      var t=state.trials[c.id]; var d=daysSince(t.start); var target=c.weeks*7; var pctc=Math.min(100, Math.round(100*d/target)); var due=d>=target;
+      var card=document.createElement('div'); card.className='trialcard';
+      card.innerHTML='<div class="tc-top"><span class="tc-name">'+c.name+'</span><span class="tc-days tnum">day '+d+' / '+target+'</span></div>'+
+        '<div class="tbar"><i style="width:'+pctc+'%"></i></div>'+
+        '<div class="tc-foot"><span class="tc-hint">'+(due?'Review time — did it help?':'Reviewing at week '+c.weeks)+'</span>'+
+        (due?'<span class="verdict"><button class="vbtn good" data-v="good">Helped</button><button class="vbtn same" data-v="same">No change</button><button class="vbtn bad" data-v="bad">Worse</button></span>':'<button class="linkbtn" data-stop="'+c.id+'">Stop trial</button>')+'</div>';
+      if(due){ card.querySelectorAll('.vbtn').forEach(function(b){ b.addEventListener('click', function(){ endTrial(c.id, b.getAttribute('data-v')); }); }); }
+      else { card.querySelector('[data-stop]').addEventListener('click', function(){ endTrial(c.id, null); }); }
+      wrap.appendChild(card);
+    });
+    var addRow=document.createElement('div'); addRow.style.marginTop = active.length?'12px':'0';
+    if(avail.length){
+      addRow.innerHTML='<div class="chips" id="trialChips"></div>'; wrap.appendChild(addRow);
+      var chips=addRow.querySelector('#trialChips');
+      var hint=document.createElement('div'); hint.className='tc-hint'; hint.style.marginBottom='8px'; hint.style.width='100%';
+      hint.textContent = active.length ? 'Add another (fewer at once = clearer signal):' : 'Start one change and give it a fair run:';
+      chips.appendChild(hint);
+      avail.forEach(function(c){ var b=document.createElement('button'); b.className='addchip'; b.textContent='+ '+c.name; b.addEventListener('click', function(){ startTrial(c.id); }); chips.appendChild(b); });
+    }
+    host.appendChild(wrap);
+    if(past.length){
+      var pastWrap=document.createElement('div'); pastWrap.style.marginTop='16px'; pastWrap.innerHTML='<div class="tc-hint" style="margin-bottom:8px">Past trials</div>';
+      past.forEach(function(c){ var t=state.trials[c.id]; var res=t.result;
+        var label = res==='good'?'Helped':res==='same'?'No change':res==='bad'?'Worse':'Stopped'; var cls = res==='good'?'good':res==='bad'?'bad':'same';
+        var row=document.createElement('div'); row.className='set-row'; row.style.padding='6px 0';
+        row.innerHTML='<span class="tc-name" style="font-size:13.5px">'+c.name+'</span><span class="result '+cls+'">'+label+'</span>'; pastWrap.appendChild(row); });
+      host.appendChild(pastWrap);
+    }
+  }
+  function startTrial(id){ state.trials[id]={start:todayKey(), ended:false, result:null}; save(); renderTrials(); }
+  function endTrial(id, result){ if(state.trials[id]){ state.trials[id].ended=true; state.trials[id].result=result; save(); } renderTrials(); }
+
+  function renderToday(){
+    buildModel();
+    renderPersonalizeSlot();
+    renderBarrier();
+    fillModel(byId('amList'), todayModel.am);
+    fillModel(byId('pmList'), todayModel.pm);
+    fillModel(byId('habitList'), todayModel.habits);
+    fillModel(byId('weekList'), todayModel.week);
+    renderTrials();
+    refreshCounts();
+    updateFocus();
+  }
+
+  function updateFocus(){
+    var P=pget(), h=new Date().getHours(); var txt;
+    if(P){
+      var preg = has(P.health,'pregnant')||has(P.health,'breastfeeding'); var conc=P.concerns||[];
+      if(preg) txt='You’re expecting — your retinoid is paused and <b>azelaic acid</b> stands in tonight. Anything to avoid is flagged 🔴.';
+      else if(P.sun==='high'||P.fitzpatrick<=2) txt='Your #1 today: <b>broad-spectrum SPF and reapplication</b> — your sun exposure makes this decisive.';
+      else if(has(conc,'acne')) txt='Your focus: <b>consistency with your acne actives</b> — one at a time, don’t stack them all.';
+      else if(has(conc,'wrinkles')) txt='Tonight’s focus: your <b>retinoid</b> — the one proven topical that reverses photoaging.';
+      else if(has(conc,'pigment')) txt='Your focus: <b>vitamin C + niacinamide + daily SPF</b> — the evidence-backed tone stack.';
+      else txt='Your Core routine, tuned to your profile. Consistency beats intensity.';
+    } else {
+      txt = h>=18 ? 'Evening focus: <b>cleanse off the day’s SPF + pollution</b>, then your retinoid. Consistency beats intensity.'
+                  : 'The single highest-value step today: <b>broad-spectrum sunscreen</b>. Everything else compounds on top of it.';
+    }
+    byId('focusText').innerHTML = txt;
+  }
+
+  /* ---------------- PROTOCOL ---------------- */
+  function renderProtocol(){
+    var host=byId('protocolBody'); host.innerHTML='';
+    var live=[{title:'Daily — morning',glyph:'☀️',items:routine.am},{title:'Daily — evening',glyph:'🌙',items:routine.pm},
+      {title:'Weekly / periodic',glyph:'📅',items:routine.week},{title:'Lifestyle — ongoing',glyph:'🧬',items:routine.habits}];
+    live.concat(protocolSections).forEach(function(sec){
+      var wrap=document.createElement('div'); wrap.className='group';
+      wrap.innerHTML='<div class="g-head" style="cursor:default"><span class="g-title"><span aria-hidden="true">'+sec.glyph+'</span> '+sec.title+'</span></div>';
+      var panel=document.createElement('div'); panel.className='panel'; var ul=document.createElement('ul'); ul.className='items';
+      sec.items.forEach(function(it){ var li=document.createElement('li'); li.className='item'; li.style.cursor='default';
+        var fit=fitFor(it); var dot = fit.flag ? '<span class="dotc" title="'+(fit.reason||'').replace(/"/g,'&quot;')+'">'+fitDot(fit.flag)+'</span>' : '';
+        var tag= it.tag ? '<span class="tag '+it.tag+'">'+tagLabel(it.tag)+'</span>' : ''; var t=tierOf(it.score);
+        var note = (hasProfile() && fit.flag && fit.flag!=='good') ? fit.reason : it.note;
+        li.innerHTML='<span class="tierpill t-'+t.toLowerCase()+'" style="margin-top:2px">'+it.score+'</span>'+
+          '<span class="itxt"><span class="name" style="text-decoration:none;color:var(--ink)">'+it.name+'</span>'+(note?'<span class="note">'+note+'</span>':'')+'</span>'+
+          '<span class="meta">'+dot+tag+'</span>';
+        ul.appendChild(li); });
+      panel.appendChild(ul); wrap.appendChild(panel); host.appendChild(wrap);
+    });
+  }
+
+  /* ---------------- LEADERBOARD ---------------- */
+  var lbTier='all', lbQuery='';
+  function renderBoard(){
+    var host=byId('lbList'); host.innerHTML='';
+    if(lbTier==='foryou' && !hasProfile()){
+      host.innerHTML='<div class="empty" style="margin:0"><div class="big">✨</div>Set up your skin profile to see what fits you.<br><button class="primary" id="fyIntake" style="margin-top:14px">Personalize</button></div>';
+      var b=byId('fyIntake'); if(b) b.addEventListener('click', openIntake); return;
+    }
+    var rows=board.map(function(r){ return {r:r, fit: hasProfile()? fitFor({name:r[1]}) : {flag:null,reason:''}}; }).filter(function(o){
+      var r=o.r, t=tierOf(r[3]);
+      if(lbTier==='foryou'){ if(o.fit.flag!=='good') return false; }
+      else if(lbTier!=='all' && t!==lbTier) return false;
+      if(lbQuery && r[1].toLowerCase().indexOf(lbQuery)===-1) return false;
+      return true;
+    });
+    if(lbTier==='foryou') rows.sort(function(a,b){ return b.r[3]-a.r[3]; });
+    if(!rows.length){ host.innerHTML='<div class="row" style="color:var(--ink-soft)">No matches.</div>'; return; }
+    rows.forEach(function(o){ var r=o.r, t=tierOf(r[3]), col=tierColor(t);
+      var dot = o.fit.flag ? '<span class="dotc" title="'+(o.fit.reason||'').replace(/"/g,'&quot;')+'">'+fitDot(o.fit.flag)+'</span>' : '';
+      var why = (hasProfile() && o.fit.flag && lbTier!=='foryou') ? '<div class="whyfit">'+o.fit.reason+'</div>' : (lbTier==='foryou'? '<div class="whyfit">'+o.fit.reason+'</div>':'');
+      var div=document.createElement('div'); div.className='row';
+      div.innerHTML='<div class="rank tnum">'+r[0]+'</div><div><div class="rname">'+dot+'<span>'+r[1]+'</span></div><div class="rmeta"><span class="cyc">'+r[2]+'</span><span class="tierpill t-'+t.toLowerCase()+'">'+t+'</span></div>'+why+'</div>'+
+        '<div class="scorecell"><div class="bar"><i style="width:'+r[3]+'%;background:'+col+'"></i></div><div class="bigscore tnum" style="color:'+col+'">'+r[3]+'</div></div>';
+      host.appendChild(div); });
+  }
+
+  /* ---------------- RESEARCH ---------------- */
+  function renderResearch(){
+    var t=byId('takeaways'); t.innerHTML=''; takeaways.forEach(function(x){ var d=document.createElement('div'); d.className='takeaway'; d.innerHTML='<span class="n"></span><p>'+x+'</p>'; t.appendChild(d); });
+    var cl=byId('cyclist'); cl.innerHTML=''; cycles.forEach(function(c){ var r=document.createElement('div'); r.className='cyc-row'; r.innerHTML='<span class="dot"></span><span class="cn tnum">C'+c[0]+'</span><div><div class="ct">'+c[1]+'</div><div class="cd">'+c[2]+'</div></div>'; cl.appendChild(r); });
+    var rb=byId('rubric'); rb.innerHTML=''; rubric.forEach(function(x){ var r=document.createElement('div'); r.innerHTML='<div class="rub-row"><span>'+x[0]+'</span><span class="w tnum">'+x[1]+'%</span></div><div class="wbar"><i style="width:'+(x[1]/30*100)+'%"></i></div>'; rb.appendChild(r); });
+    var chg=byId('changelog'); chg.innerHTML=''; changelog.forEach(function(c){ var d=document.createElement('div'); d.className='clog'; d.innerHTML='<div><div class="cv">'+c.v+'</div><div class="cdate">'+c.date+'</div></div><div class="cnote">'+c.note+'</div>'; chg.appendChild(d); });
+    renderDataStamp();
+  }
+
+  /* ---------------- DATA SYNC (auto-refresh from the research) ---------------- */
+  var dataUpdated=null, dataCounts=null;
+  function applyData(d){ if(!d) return false; var changed=false;
+    if(Array.isArray(d.board) && d.board.length){ board.length=0; d.board.forEach(function(r){ board.push(r); }); changed=true; }
+    if(Array.isArray(d.changelog) && d.changelog.length){ changelog.length=0; d.changelog.forEach(function(c){ changelog.push(c); }); changed=true; }
+    if(d.updated) dataUpdated=d.updated; if(d.counts) dataCounts=d.counts; return changed; }
+  function renderDataStamp(){ var el=byId('dataStamp'); if(!el) return;
+    if(dataUpdated){ var c=dataCounts; el.textContent='Synced from the research — updated '+dataUpdated+(c?(' · '+c.core+' Core · '+c.promising+' Promising · '+c.experimental+' Experimental · '+c.skip+' Skip'):''); }
+    else { el.textContent='Built-in dataset (offline or preview).'; } }
+  function loadData(){ try{ fetch('data/skinscore-data.json?ts='+Date.now(), {cache:'no-store'})
+      .then(function(r){ return r.ok? r.json():null; })
+      .then(function(d){ if(applyData(d)){ renderBoard(); renderResearch(); if(!byId('dashboard').hidden) renderDashboard(); } })
+      .catch(function(){}); }catch(e){} }
+
+  /* ---------------- DASHBOARD ---------------- */
+  function dashDailyIds(){ buildModel(); var ids=[]; ['am','pm','habits'].forEach(function(k){ todayModel[k].forEach(function(e){ if(!e.paused && !e.item.injected) ids.push(e.item.id); }); }); return ids; }
+  function dayCompletion(key, ids){ if(!ids.length) return 0; var c=state.checks[key]||{}, n=0; ids.forEach(function(id){ if(c[id]) n++; }); return n/ids.length; }
+  function allCheckKeys(){ return Object.keys(state.checks||{}).filter(function(k){ return k.charAt(0)!=='W'; }); }
+  function dashStats(ids){
+    var keys=allCheckKeys().sort();
+    var daysTracked = keys.filter(function(k){ var c=state.checks[k]; return c && ids.some(function(id){ return c[id]; }); }).length;
+    var today=new Date(), sum=0;
+    for(var i=0;i<30;i++){ var d=new Date(today); d.setDate(today.getDate()-i); sum+=dayCompletion(keyOf(d), ids); }
+    var best=0, cur=0;
+    if(keys.length){ var d2=parseKey(keys[0]), end=new Date();
+      while(d2<=end){ if(anchorsDone(keyOf(d2))){ cur++; if(cur>best) best=cur; } else cur=0; d2.setDate(d2.getDate()+1); } }
+    return { streak:computeStreak(), adherence30:Math.round(100*sum/30), daysTracked:daysTracked, bestStreak:best };
+  }
+  function heatmapSVG(ids){
+    var weeks=12, cell=15, gap=4, rows=7;
+    var today=new Date(), ti=(today.getDay()+6)%7, monday=new Date(today); monday.setDate(today.getDate()-ti);
+    var start=new Date(monday); start.setDate(monday.getDate()-(weeks-1)*7);
+    var w=weeks*(cell+gap), h=rows*(cell+gap), cells='';
+    for(var c=0;c<weeks;c++){ for(var r=0;r<rows;r++){ var d=new Date(start); d.setDate(start.getDate()+c*7+r); if(d>today) continue;
+      var k=keyOf(d), comp=dayCompletion(k,ids), x=c*(cell+gap), y=r*(cell+gap);
+      var fill=comp<=0?'var(--line-soft)':'var(--accent)', op=comp<=0?1:(0.28+0.72*comp);
+      cells+='<rect x="'+x+'" y="'+y+'" width="'+cell+'" height="'+cell+'" rx="3" fill="'+fill+'" fill-opacity="'+op.toFixed(2)+'"><title>'+k+' — '+Math.round(comp*100)+'%</title></rect>'; } }
+    return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Adherence heatmap, last 12 weeks">'+cells+'</svg>';
+  }
+  function sparkSVG(ids){
+    var n=14, W=280, H=52, pad=3, pts=[], today=new Date();
+    for(var i=n-1;i>=0;i--){ var d=new Date(today); d.setDate(today.getDate()-i); pts.push(dayCompletion(keyOf(d),ids)); }
+    var stepX=(W-2*pad)/(n-1);
+    var co=pts.map(function(v,i){ return [pad+i*stepX, pad+(1-v)*(H-2*pad)]; });
+    var line=co.map(function(p,i){ return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1); }).join(' ');
+    var last=co[co.length-1];
+    var area=line+' L'+last[0].toFixed(1)+' '+(H-pad)+' L'+pad+' '+(H-pad)+' Z';
+    return '<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+      '<path d="'+area+'" fill="var(--accent)" fill-opacity="0.12"/><path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+
+      '<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3" fill="var(--accent)"/></svg>';
+  }
+  function donutSVG(segs, size){
+    size=size||120; var r=size/2, inner=r*0.6, cx=r, cy=r, total=segs.reduce(function(a,s){return a+s.value;},0)||1, ang=-Math.PI/2, p='';
+    segs.forEach(function(s){ if(s.value<=0) return; var a2=ang+2*Math.PI*(s.value/total);
+      var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang), x2=cx+r*Math.cos(a2), y2=cy+r*Math.sin(a2), large=(a2-ang)>Math.PI?1:0;
+      p+='<path d="M'+cx+' '+cy+' L'+x1.toFixed(2)+' '+y1.toFixed(2)+' A'+r+' '+r+' 0 '+large+' 1 '+x2.toFixed(2)+' '+y2.toFixed(2)+' Z" fill="'+s.color+'"/>'; ang=a2; });
+    p+='<circle cx="'+cx+'" cy="'+cy+'" r="'+inner+'" fill="var(--surface)"/>';
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" aria-hidden="true">'+p+'</svg>';
+  }
+  function fitCounts(){ var g=0,c=0,a=0; ['am','pm','habits','week'].forEach(function(k){ routine[k].forEach(function(it){ var f=fitFor(it); if(f.flag==='good')g++; else if(f.flag==='caution')c++; else if(f.flag==='avoid')a++; }); }); return {good:g,caution:c,avoid:a}; }
+
+  function renderDashboard(){
+    var ids=dashDailyIds(), st=dashStats(ids), host=byId('dashBody');
+    var tiles=[['🔥',st.streak,'day streak'],['📈',st.adherence30+'%','30-day adherence'],['✅',st.daysTracked,'days tracked'],['🏅',st.bestStreak,'best streak']];
+    var tileHtml=tiles.map(function(t){ return '<div class="stat"><div class="s-ico">'+t[0]+'</div><div class="s-val tnum">'+t[1]+'</div><div class="s-lab">'+t[2]+'</div></div>'; }).join('');
+    function gbar(label, arr){ var done=arr.filter(function(e){return !e.paused && isDone(e.item.id,e.weekly);}).length, tot=arr.filter(function(e){return !e.paused;}).length, pct=tot?Math.round(100*done/tot):0;
+      return '<div class="gbar"><div class="gb-top"><span>'+label+'</span><span class="tnum">'+done+'/'+tot+'</span></div><div class="gb-track"><i style="width:'+pct+'%"></i></div></div>'; }
+    var todayBars=gbar('Morning',todayModel.am)+gbar('Evening',todayModel.pm)+gbar('Habits',todayModel.habits);
+    var tActive=trialCatalog.filter(function(c){var t=state.trials[c.id];return t&&!t.ended;}).length;
+    var tDone=trialCatalog.filter(function(c){var t=state.trials[c.id];return t&&t.ended;}).length;
+    var pcard;
+    if(hasProfile()){ var fc=fitCounts();
+      pcard='<div class="card"><h3>Your fit</h3><div class="fitbars">'+
+        '<div class="fitseg"><span class="dotc">🟢</span><b class="tnum">'+fc.good+'</b> good-fit for you</div>'+
+        '<div class="fitseg"><span class="dotc">🟡</span><b class="tnum">'+fc.caution+'</b> use with care</div>'+
+        '<div class="fitseg"><span class="dotc">🔴</span><b class="tnum">'+fc.avoid+'</b> paused / avoid</div></div>'+
+        '<div class="pchips" style="margin-top:14px">'+summaryChips().slice(0,6).map(function(c){return '<span class="pchip">'+c+'</span>';}).join('')+'</div></div>';
+    } else {
+      pcard='<div class="card"><h3>Personalize</h3><p>Add your skin profile to flag every item for you — and see your fit breakdown here.</p><button class="primary" id="dashIntake" style="margin-top:14px">Set up · 2 min</button></div>';
+    }
+    var counts=dataCounts||{core:26,promising:49,experimental:14,skip:1};
+    var segs=[{value:counts.core,color:'var(--core)'},{value:counts.promising,color:'var(--promising)'},{value:counts.experimental,color:'var(--experimental)'},{value:counts.skip,color:'var(--skip)'}];
+    var rcard='<div class="card"><h3>Research base</h3><div class="donutwrap">'+donutSVG(segs,116)+
+      '<div class="legend">'+
+      '<div><span class="lg" style="background:var(--core)"></span>Core <b class="tnum">'+counts.core+'</b></div>'+
+      '<div><span class="lg" style="background:var(--promising)"></span>Promising <b class="tnum">'+counts.promising+'</b></div>'+
+      '<div><span class="lg" style="background:var(--experimental)"></span>Experimental <b class="tnum">'+counts.experimental+'</b></div>'+
+      '<div><span class="lg" style="background:var(--skip)"></span>Skip <b class="tnum">'+counts.skip+'</b></div></div></div>'+
+      '<div class="tc-hint" style="margin-top:12px">'+(dataUpdated?('Synced from the research — updated '+dataUpdated):'Built-in dataset')+'</div></div>';
+    host.innerHTML =
+      '<div class="stats">'+tileHtml+'</div>'+
+      '<div class="card"><div class="c-head"><h3>Adherence</h3><span class="tc-hint">last 12 weeks</span></div><div class="heatscroll">'+heatmapSVG(ids)+'</div>'+
+        '<div style="margin-top:16px">'+sparkSVG(ids)+'</div><div class="tc-hint" style="margin-top:6px">Daily completion — last 14 days</div></div>'+
+      '<div class="grid2"><div class="card"><h3>Today</h3><div class="gbars">'+todayBars+'</div>'+
+        '<div class="tc-hint" style="margin-top:14px">Trials: <b class="tnum" style="color:var(--ink)">'+tActive+'</b> running · <b class="tnum" style="color:var(--ink)">'+tDone+'</b> reviewed</div></div>'+pcard+'</div>'+
+      '<div class="grid2">'+rcard+'<div class="card"><h3>Progress photos</h3><div id="dashPhotos"><p class="tc-hint">Loading…</p></div></div></div>';
+    if(byId('dashIntake')) byId('dashIntake').addEventListener('click', openIntake);
+    if('indexedDB' in window){ photoAll().then(function(list){ var el=byId('dashPhotos'); if(!el) return;
+      if(!list.length){ el.innerHTML='<p class="tc-hint">No photos yet — add one from the Photos tab to track visible change over time.</p>'; return; }
+      list.sort(function(a,b){return (a.date<b.date)?1:-1;}); var latest=list[0];
+      el.innerHTML='<div class="dashphoto"><img src="'+latest.dataUrl+'" alt="Latest progress photo"><div><div class="s-val tnum" style="font-size:24px">'+list.length+'</div><div class="s-lab">photo'+(list.length>1?'s':'')+' logged</div><div class="tc-hint" style="margin-top:8px">Latest: '+latest.date+'</div></div></div>';
+    }).catch(function(){ var el=byId('dashPhotos'); if(el) el.innerHTML='<p class="tc-hint">—</p>'; }); }
+  }
+
+  /* ---------------- PROGRESS PHOTOS ---------------- */
+  function idb(){ return new Promise(function(res,rej){ if(!('indexedDB' in window)) return rej('no-idb'); var r=indexedDB.open('skinscore',1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore('photos',{keyPath:'id',autoIncrement:true}); }; r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }); }
+  function photoAdd(rec){ return idb().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').add(rec); tx.oncomplete=function(){res();}; tx.onerror=function(){rej(tx.error);}; }); }); }
+  function photoAll(){ return idb().then(function(db){ return new Promise(function(res,rej){ var tx=db.transaction('photos','readonly'); var q=tx.objectStore('photos').getAll(); q.onsuccess=function(){res(q.result||[]);}; q.onerror=function(){rej(q.error);}; }); }); }
+  function photoDel(id){ return idb().then(function(db){ return new Promise(function(res){ var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').delete(id); tx.oncomplete=function(){res();}; }); }); }
+  function photoClear(){ return idb().then(function(db){ return new Promise(function(res){ var tx=db.transaction('photos','readwrite'); tx.objectStore('photos').clear(); tx.oncomplete=function(){res();}; }); }).catch(function(){}); }
+  function fileToThumb(file){ return new Promise(function(res,rej){ var fr=new FileReader(); fr.onload=function(){ var img=new Image(); img.onload=function(){ var max=1200, w=img.width, h=img.height;
+    if(w>h && w>max){ h=Math.round(h*max/w); w=max; } else if(h>max){ w=Math.round(w*max/h); h=max; } var cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h); res(cv.toDataURL('image/jpeg',0.82)); }; img.onerror=rej; img.src=fr.result; }; fr.onerror=rej; fr.readAsDataURL(file); }); }
+  function renderProgress(){
+    var host=byId('photoHost');
+    if(!('indexedDB' in window)){ host.innerHTML='<div class="empty"><div class="big">📷</div>Photo storage isn’t available in this browser.</div>'; byId('photoCount').textContent=''; return; }
+    photoAll().then(function(list){ list.sort(function(a,b){ return (a.date<b.date)?1:-1; });
+      byId('photoCount').textContent = list.length ? list.length+' photo'+(list.length>1?'s':'') : '';
+      if(!list.length){ host.innerHTML='<div class="empty"><div class="big">📷</div>No photos yet. Add one in good, consistent light — same spot, same time of day — and repeat every couple of weeks.</div>'; return; }
+      var grid=document.createElement('div'); grid.className='photo-grid';
+      list.forEach(function(p){ var cell=document.createElement('div'); cell.className='photo';
+        cell.innerHTML='<img src="'+p.dataUrl+'" alt="Progress photo from '+p.date+'"><div class="date">'+p.date+'</div><button class="del" aria-label="Delete photo">✕</button>';
+        cell.querySelector('img').addEventListener('click', function(){ byId('lightboxImg').src=p.dataUrl; byId('lightbox').classList.add('open'); });
+        cell.querySelector('.del').addEventListener('click', function(e){ e.stopPropagation(); if(confirm('Delete this photo?')) photoDel(p.id).then(renderProgress); });
+        grid.appendChild(cell); });
+      host.innerHTML=''; host.appendChild(grid);
+    }).catch(function(){ host.innerHTML='<div class="empty">Couldn’t load photos.</div>'; });
+  }
+  byId('addPhoto').addEventListener('click', function(){ byId('photoInput').click(); });
+  byId('photoInput').addEventListener('change', function(e){ var f=e.target.files&&e.target.files[0]; if(!f) return;
+    fileToThumb(f).then(function(url){ return photoAdd({date:todayKey(), dataUrl:url}); }).then(renderProgress).catch(function(){ alert('Sorry — couldn’t save that image.'); }); e.target.value=''; });
+  byId('lightbox').addEventListener('click', function(){ this.classList.remove('open'); });
+
+  /* ---------------- INTAKE ---------------- */
+  var FZ = [[1,'Type I','Always burns, never tans — very fair'],[2,'Type II','Usually burns, tans minimally — fair'],[3,'Type III','Sometimes burns, tans evenly — medium'],
+    [4,'Type IV','Rarely burns, tans easily — olive / light brown'],[5,'Type V','Very rarely burns — brown'],[6,'Type VI','Never burns — deeply pigmented']];
+  var SKIN_TYPES=[['dry','Dry'],['oily','Oily'],['combination','Combination'],['sensitive','Sensitive'],['normal','Normal']];
+  var CONCERNS=[['acne','Acne / breakouts'],['wrinkles','Fine lines & wrinkles'],['pigment','Dark spots / uneven tone'],['redness','Redness / rosacea'],['dryness','Dryness / tightness'],['texture','Dullness / texture'],['pores','Large pores']];
+  var CONDITIONS=[['eczema','Eczema / atopic dermatitis'],['psoriasis','Psoriasis'],['rosacea','Rosacea'],['melasma','Melasma'],['active_acne','Active acne'],['skin_cancer_hx','Skin-cancer history']];
+  var HEALTH=[['pregnant','Pregnant'],['breastfeeding','Breastfeeding'],['isotretinoin','On oral isotretinoin'],['retinoid_user','Already using a retinoid'],['immunocompromised','Immunocompromised'],['blood_thinners','On blood thinners'],['photosensitizing_med','Photosensitizing medication'],['high_skin_cancer_risk','High skin-cancer risk']];
+  var SUN=[['low','Minimal — mostly indoors'],['moderate','Moderate — some daily sun'],['high','High — outdoor / very sunny']];
+  var CLIMATE=[['dry','Dry / arid'],['humid','Humid'],['temperate','Temperate'],['cold','Cold']];
+  var BUDGET=[['minimal','Keep it cheap'],['moderate','Moderate'],['all_in','All-in']];
+  var EFFORT=[['minimal','Minimal — few steps'],['moderate','Moderate'],['high','I enjoy a routine']];
+  function concLabel(v){ for(var i=0;i<CONCERNS.length;i++) if(CONCERNS[i][0]===v) return CONCERNS[i][1].split(' /')[0].split(' &')[0]; return v; }
+  function condLabel(v){ for(var i=0;i<CONDITIONS.length;i++) if(CONDITIONS[i][0]===v) return CONDITIONS[i][1].split(' /')[0]; return v; }
+  function healthLabel(v){ for(var i=0;i<HEALTH.length;i++) if(HEALTH[i][0]===v) return HEALTH[i][1]; return v; }
+  function sunLabel(v){ return {low:'Low sun',moderate:'Moderate sun',high:'High sun'}[v]||v; }
+
+  var fieldSpecs=[
+    {key:'age', type:'number', label:'Age', help:'Shapes emphasis — prevention when younger, correction options later.'},
+    {key:'fitzpatrick', type:'fitz', label:'Skin tone (Fitzpatrick)', help:'How your skin responds to sun — drives pigmentation and skin-cancer flags.'},
+    {key:'skinType', type:'single', label:'Skin type', options:SKIN_TYPES},
+    {key:'concerns', type:'multi', label:'Main concerns', help:'Pick any that apply — matched items get promoted.', options:CONCERNS},
+    {key:'conditions', type:'multi', label:'Skin conditions', options:CONDITIONS},
+    {key:'health', type:'multi', label:'Health & medications', help:'Used only for safety flags — pregnancy and meds change what’s safe.', options:HEALTH},
+    {key:'sun', type:'single', label:'Typical sun exposure', options:SUN},
+    {key:'climate', type:'single', label:'Climate', options:CLIMATE},
+    {key:'budget', type:'single', label:'Budget appetite', options:BUDGET},
+    {key:'effort', type:'single', label:'Routine appetite', options:EFFORT},
+    {key:'allergies', type:'text', label:'Allergies / notes (optional)', help:'Free text, for your reference.'}
+  ];
+  var intakeDraft = null;
+  function renderIntake(){
+    var host=byId('intakeBody'); host.innerHTML='';
+    fieldSpecs.forEach(function(f){
+      var fld=document.createElement('div'); fld.className='fld';
+      var lab=document.createElement('label'); lab.textContent=f.label; fld.appendChild(lab);
+      if(f.help){ var hp=document.createElement('small'); hp.className='help'; hp.textContent=f.help; fld.appendChild(hp); }
+      if(f.type==='number'){ var i=document.createElement('input'); i.type='number'; i.min=0; i.max=120; i.inputMode='numeric'; i.className='txtin'; i.style.maxWidth='140px'; i.value=intakeDraft.age||''; i.addEventListener('input', function(){ intakeDraft.age = i.value? +i.value : null; }); fld.appendChild(i); }
+      else if(f.type==='text'){ var tx=document.createElement('input'); tx.type='text'; tx.className='txtin'; tx.value=intakeDraft.allergies||''; tx.addEventListener('input', function(){ intakeDraft.allergies=tx.value; }); fld.appendChild(tx); }
+      else if(f.type==='fitz'){ var w=document.createElement('div'); w.className='fzwrap'; FZ.forEach(function(o){ var b=document.createElement('button'); b.type='button'; b.className='fzopt'; b.setAttribute('aria-pressed', intakeDraft.fitzpatrick===o[0]); b.innerHTML='<span class="fznum">'+o[1]+'</span><span class="fzdesc">'+o[2]+'</span>'; b.addEventListener('click', function(){ intakeDraft.fitzpatrick = (intakeDraft.fitzpatrick===o[0])?null:o[0]; renderIntake(); }); w.appendChild(b); }); fld.appendChild(w); }
+      else { var wrp=document.createElement('div'); wrp.className='optwrap'; f.options.forEach(function(o){ var val=o[0], labl=o[1]; var b=document.createElement('button'); b.type='button'; b.className='optchip';
+        var on = f.type==='multi' ? ((intakeDraft[f.key]||[]).indexOf(val)>=0) : (intakeDraft[f.key]===val); b.setAttribute('aria-pressed', on); b.textContent=labl;
+        b.addEventListener('click', function(){ if(f.type==='multi'){ var arr=intakeDraft[f.key]||[]; var ix=arr.indexOf(val); if(ix>=0) arr.splice(ix,1); else arr.push(val); intakeDraft[f.key]=arr; } else { intakeDraft[f.key] = (intakeDraft[f.key]===val)?null:val; } renderIntake(); });
+        wrp.appendChild(b); }); fld.appendChild(wrp); }
+      host.appendChild(fld);
+    });
+  }
+  function openIntake(){ intakeDraft = state.profile ? clone(state.profile) : {concerns:[], conditions:[], health:[]}; renderIntake();
+    byId('intake').classList.add('open'); byId('backdrop').classList.add('open'); closeSheet(); }
+  function closeIntake(){ byId('intake').classList.remove('open'); byId('backdrop').classList.remove('open'); }
+  byId('intakeCancel').addEventListener('click', closeIntake);
+  byId('intakeSave').addEventListener('click', function(){ state.profile = clone(intakeDraft); save(); closeIntake(); applyPersonalization(); });
+  byId('intakeClear').addEventListener('click', function(){ if(confirm('Clear your saved profile?')){ state.profile=null; save(); closeIntake(); applyPersonalization(); } });
+
+  function applyPersonalization(){ renderToday(); renderProtocol(); renderBoard(); renderProfileSummary(); }
+
+  /* ---------------- SETTINGS: profile summary ---------------- */
+  function renderProfileSummary(){
+    var host=byId('profileSummary'); host.innerHTML='';
+    if(!hasProfile()){
+      host.innerHTML='<div class="set-row"><span class="lab">Personalize your protocol <small>Flag all 90 items for your skin</small></span><button class="primary" id="setupProfile">Set up</button></div>';
+      byId('setupProfile').addEventListener('click', openIntake); return;
+    }
+    var chips = summaryChips().map(function(c){ return '<span class="pchip">'+c+'</span>'; }).join('');
+    var wrap=document.createElement('div');
+    wrap.innerHTML='<div class="pchips" style="margin-bottom:12px">'+chips+'</div><div class="set-row" style="padding-top:0"><span class="lab">Your skin profile</span><button class="ghostbtn" id="editProfile">Edit</button></div>';
+    host.appendChild(wrap);
+    byId('editProfile').addEventListener('click', openIntake);
+  }
+
+  /* ---------------- NAV ---------------- */
+  var views=['today','dashboard','progress','protocol','leaderboard','research'];
+  function show(v){ views.forEach(function(id){ byId(id).hidden=(id!==v); });
+    document.querySelectorAll('nav.tabs button').forEach(function(b){ b.setAttribute('aria-selected', b.dataset.view===v); });
+    state.view=v; save(); if(v==='progress') renderProgress(); if(v==='dashboard') renderDashboard(); window.scrollTo({top:0}); }
+  document.querySelectorAll('nav.tabs button').forEach(function(b){ b.addEventListener('click', function(){ show(b.dataset.view); }); });
+
+  /* ---------------- THEME ---------------- */
+  function actualMode(){ var th=state.settings.theme; if(th==='day'||th==='night') return th; var h=new Date().getHours(); return (h>=6&&h<18)?'day':'night'; }
+  function applyTheme(){ var m=actualMode(); document.documentElement.setAttribute('data-mode', m);
+    byId('modeBtn').textContent = m==='night'?'🌙':'☀️';
+    byId('brandsub').textContent = m==='night'?'Evening ritual · evidence-graded':'Evidence-graded daily protocol';
+    var mc=document.querySelector('meta[name="theme-color"]'); if(mc) mc.setAttribute('content', m==='night'?'#14131A':'#3D3A78');
+    document.querySelectorAll('#themeSeg button').forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.theme===state.settings.theme); }); }
+  byId('modeBtn').addEventListener('click', function(){ state.settings.theme = actualMode()==='night'?'day':'night'; save(); applyTheme(); });
+  document.querySelectorAll('#themeSeg button').forEach(function(b){ b.addEventListener('click', function(){ state.settings.theme=b.dataset.theme; save(); applyTheme(); }); });
+
+  /* ---------------- SETTINGS SHEET ---------------- */
+  function openSheet(){ byId('sheet').classList.add('open'); byId('backdrop').classList.add('open'); }
+  function closeSheet(){ byId('sheet').classList.remove('open'); }
+  byId('gearBtn').addEventListener('click', openSheet);
+  byId('backdrop').addEventListener('click', function(){ closeSheet(); closeIntake(); byId('backdrop').classList.remove('open'); });
+
+  var rOn=byId('remindOn'), rAm=byId('remAm'), rPm=byId('remPm');
+  rOn.checked=state.settings.remind.on; rAm.value=state.settings.remind.am; rPm.value=state.settings.remind.pm;
+  rOn.addEventListener('change', function(){
+    if(rOn.checked && 'Notification' in window && Notification.permission!=='granted'){
+      Notification.requestPermission().then(function(p){ if(p!=='granted'){ rOn.checked=false; } state.settings.remind.on=rOn.checked; save(); scheduleRem(); });
+    } else { state.settings.remind.on=rOn.checked; save(); scheduleRem(); } });
+  rAm.addEventListener('change', function(){ state.settings.remind.am=rAm.value; save(); scheduleRem(); });
+  rPm.addEventListener('change', function(){ state.settings.remind.pm=rPm.value; save(); scheduleRem(); });
+
+  var remTimers=[];
+  function clearRem(){ remTimers.forEach(clearTimeout); remTimers=[]; }
+  function nextMs(hhmm){ if(!hhmm) return null; var p=hhmm.split(':'); var d=new Date(); d.setHours(+p[0], +p[1], 0, 0); var diff=d-new Date(); return diff>0?diff:null; }
+  function fireNote(title, body){ try{ if(navigator.serviceWorker && navigator.serviceWorker.ready){ navigator.serviceWorker.ready.then(function(reg){ reg.showNotification(title,{body:body, icon:'icons/icon-192.png', badge:'icons/icon-192.png'}); }).catch(function(){ new Notification(title,{body:body}); }); } else if('Notification' in window){ new Notification(title,{body:body}); } }catch(e){} }
+  function scheduleRem(){ clearRem(); var s=state.settings.remind; if(!s.on || !('Notification' in window) || Notification.permission!=='granted') return;
+    [[s.am,'Morning routine ☀️','Cleanse, treat, moisturize — and SPF.'],[s.pm,'Evening routine 🌙','Cleanse off the day, then your retinoid.']].forEach(function(r){ var ms=nextMs(r[0]); if(ms==null) return; remTimers.push(setTimeout(function(){ fireNote(r[1], r[2]); scheduleRem(); }, ms)); }); }
+
+  byId('exportBtn').addEventListener('click', function(){ try{ var blob=new Blob([JSON.stringify(state,null,2)], {type:'application/json'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download='skinscore-backup-'+todayKey()+'.json'; a.click(); setTimeout(function(){ URL.revokeObjectURL(url); }, 1000); }catch(e){ alert('Export failed.'); } });
+  byId('resetBtn').addEventListener('click', function(){ if(!confirm('Reset your profile, check-ins, trials, and photos? This cannot be undone.')) return; try{ localStorage.removeItem(LS); }catch(e){} photoClear().then(function(){ location.reload(); }); });
+
+  /* ---------------- INSTALL ---------------- */
+  var deferredPrompt=null;
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferredPrompt=e; byId('installBtn').classList.add('show'); });
+  function doInstall(){ if(!deferredPrompt) return; deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(){ deferredPrompt=null; byId('installBtn').classList.remove('show'); }); }
+  byId('installBtn').addEventListener('click', doInstall); byId('installBtn2').addEventListener('click', doInstall);
+  window.addEventListener('appinstalled', function(){ byId('installBtn').classList.remove('show'); });
+  var isiOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  if(isiOS && !isStandalone){ byId('iosHint').hidden=false; byId('installBtn2').style.display='none'; }
+  if(isStandalone){ byId('installBlock').style.display='none'; }
+
+  /* ---------------- GREETING ---------------- */
+  (function(){ var h=new Date().getHours(); byId('greet').textContent = h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+    byId('todayDate').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'}); })();
+
+  document.querySelectorAll('#today .group > .g-head').forEach(function(h){ h.addEventListener('click', function(){ h.parentElement.classList.toggle('collapsed'); }); });
+
+  /* ---------------- BOOT ---------------- */
+  applyTheme();
+  renderToday();
+  renderProtocol();
+  renderResearch();
+  renderProfileSummary();
+  byId('lbSearch').addEventListener('input', function(e){ lbQuery=e.target.value.toLowerCase().trim(); renderBoard(); });
+  byId('lbFilters').addEventListener('click', function(e){ var b=e.target.closest('.fbtn'); if(!b) return; lbTier=b.dataset.tier;
+    document.querySelectorAll('#lbFilters .fbtn').forEach(function(x){ x.setAttribute('aria-pressed', x===b); }); renderBoard(); });
+  renderBoard();
+  show(state.view && views.indexOf(state.view)>=0 ? state.view : 'today');
+  if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(function(){}); }catch(e){} }
+  scheduleRem();
+  loadData();
+})();
+</script>
+</body>
+</html>

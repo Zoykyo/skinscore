@@ -1,0 +1,565 @@
+{
+  "version": 1,
+  "updated": "2026-07-09",
+  "source": "Cycle-09 leaderboard + Charter changelog",
+  "counts": {
+    "core": 26,
+    "promising": 49,
+    "experimental": 14,
+    "skip": 1
+  },
+  "board": [
+    [
+      1,
+      "Broad-spectrum sunscreen (topical)",
+      "C6",
+      95
+    ],
+    [
+      2,
+      "Behavioral sun protection (shade, clothing, hats, timing)",
+      "C8",
+      94
+    ],
+    [
+      3,
+      "Oral nicotinamide (skin-cancer prevention, high-risk only)",
+      "C5",
+      89
+    ],
+    [
+      4,
+      "Consistent simple routine (adherence itself)",
+      "C6",
+      86
+    ],
+    [
+      5,
+      "Smoking cessation",
+      "C8",
+      86
+    ],
+    [
+      6,
+      "Soak-and-seal bathing technique",
+      "C7",
+      84
+    ],
+    [
+      7,
+      "Tretinoin / prescription retinoid",
+      "C2·C6",
+      84
+    ],
+    [
+      8,
+      "Avoiding face-picking / over-touching",
+      "C8",
+      83
+    ],
+    [
+      9,
+      "Benzoyl peroxide (acne)",
+      "C6",
+      83
+    ],
+    [
+      10,
+      "Ceramide / barrier moisturizer",
+      "C6",
+      82
+    ],
+    [
+      11,
+      "Topical niacinamide",
+      "C6",
+      82
+    ],
+    [
+      12,
+      "Avoid over-exfoliation (habit)",
+      "C6",
+      81
+    ],
+    [
+      13,
+      "Low-glycemic-load diet",
+      "C4",
+      81
+    ],
+    [
+      14,
+      "Sleep quantity & quality",
+      "C8",
+      80
+    ],
+    [
+      15,
+      "Botulinum toxin",
+      "C2",
+      79
+    ],
+    [
+      16,
+      "Polyphenol/flavonoid intake (green tea, cocoa, tomato)",
+      "C4",
+      79
+    ],
+    [
+      17,
+      "Psychological stress reduction",
+      "C8",
+      78
+    ],
+    [
+      18,
+      "Adapalene 0.1% (OTC retinoid)",
+      "C6",
+      77
+    ],
+    [
+      19,
+      "Air-pollution mitigation (evening cleanse, antioxidants)",
+      "C8",
+      76
+    ],
+    [
+      20,
+      "Azelaic acid",
+      "C6",
+      75
+    ],
+    [
+      21,
+      "Bath temperature/duration (lukewarm, short)",
+      "C7",
+      75
+    ],
+    [
+      22,
+      "Hyaluronic acid fillers",
+      "C2",
+      75
+    ],
+    [
+      23,
+      "Reducing dairy / skim milk (acne)",
+      "C4",
+      75
+    ],
+    [
+      24,
+      "Retinol (OTC)",
+      "C6",
+      75
+    ],
+    [
+      25,
+      "Salicylic acid (BHA)",
+      "C6",
+      75
+    ],
+    [
+      26,
+      "Topical vitamin C (L-ascorbic acid)",
+      "C6",
+      75
+    ],
+    [
+      27,
+      "Red/NIR photobiomodulation (LED)",
+      "C3",
+      74
+    ],
+    [
+      28,
+      "Vitamin D (deficiency correction)",
+      "C5",
+      74
+    ],
+    [
+      29,
+      "Fermented foods + fiber (gut–skin)",
+      "C4",
+      73
+    ],
+    [
+      30,
+      "Mediterranean dietary pattern",
+      "C4",
+      73
+    ],
+    [
+      31,
+      "Added-sugar / SSB reduction",
+      "C4",
+      72
+    ],
+    [
+      32,
+      "Alcohol moderation (lifestyle)",
+      "C8",
+      72
+    ],
+    [
+      33,
+      "Alcohol reduction (diet)",
+      "C4",
+      72
+    ],
+    [
+      34,
+      "Fractional lasers (CO2/Fraxel)",
+      "C2",
+      72
+    ],
+    [
+      35,
+      "Minimizing high-AGE cooking",
+      "C4",
+      72
+    ],
+    [
+      36,
+      "GHK-Cu copper peptide (topical)",
+      "C2",
+      71
+    ],
+    [
+      37,
+      "Hydrolyzed collagen peptides (oral)",
+      "C5",
+      71
+    ],
+    [
+      38,
+      "Omega-3 from oily fish (diet)",
+      "C4",
+      71
+    ],
+    [
+      39,
+      "Oral carotenoids (lycopene/mixed)",
+      "C5",
+      71
+    ],
+    [
+      40,
+      "Polypodium leucotomos (oral)",
+      "C5",
+      71
+    ],
+    [
+      41,
+      "Topical HA / humectants",
+      "C6",
+      71
+    ],
+    [
+      42,
+      "Zinc (acne, oral)",
+      "C5",
+      71
+    ],
+    [
+      43,
+      "Blue-light LED (acne)",
+      "C3",
+      70
+    ],
+    [
+      44,
+      "Microneedling",
+      "C2",
+      70
+    ],
+    [
+      45,
+      "RF microneedling",
+      "C2",
+      70
+    ],
+    [
+      46,
+      "Regular aerobic exercise",
+      "C8",
+      70
+    ],
+    [
+      47,
+      "Water intake / hydration",
+      "C4",
+      70
+    ],
+    [
+      48,
+      "Bathing frequency (if sealed)",
+      "C7",
+      69
+    ],
+    [
+      49,
+      "Omega-3 supplements",
+      "C5",
+      69
+    ],
+    [
+      50,
+      "AHA (glycolic/lactic)",
+      "C6",
+      68
+    ],
+    [
+      51,
+      "Colloidal oatmeal bath (eczema)",
+      "C7",
+      68
+    ],
+    [
+      52,
+      "IPL (intense pulsed light)",
+      "C2",
+      68
+    ],
+    [
+      53,
+      "Astaxanthin (oral)",
+      "C5",
+      67
+    ],
+    [
+      54,
+      "Maintaining indoor humidity",
+      "C8",
+      67
+    ],
+    [
+      55,
+      "Oral vitamin C",
+      "C5",
+      67
+    ],
+    [
+      56,
+      "Professional / in-office LED",
+      "C3",
+      67
+    ],
+    [
+      57,
+      "Matrixyl (palmitoyl peptides)",
+      "C2",
+      66
+    ],
+    [
+      58,
+      "Oral hyaluronic acid",
+      "C5",
+      66
+    ],
+    [
+      59,
+      "Dead Sea climatotherapy (psoriasis)",
+      "C7",
+      65
+    ],
+    [
+      60,
+      "Dilute bleach baths (mod-severe AD, supervised)",
+      "C7",
+      65
+    ],
+    [
+      61,
+      "Dead Sea / Mg-rich bath salts",
+      "C7",
+      64
+    ],
+    [
+      62,
+      "Back-sleeping (\"sleep wrinkles\")",
+      "C8",
+      63
+    ],
+    [
+      63,
+      "Topical estrogen (skin)",
+      "C2",
+      63
+    ],
+    [
+      64,
+      "Oral ceramides / phytoceramides",
+      "C5",
+      62
+    ],
+    [
+      65,
+      "Thermal spring water sprays",
+      "C7",
+      60
+    ],
+    [
+      66,
+      "Topical rapamycin (senomorphic)",
+      "C2",
+      60
+    ],
+    [
+      67,
+      "Balneotherapy (thermal-spring baths)",
+      "C7",
+      59
+    ],
+    [
+      68,
+      "Platelet-rich plasma (PRP)",
+      "C2",
+      59
+    ],
+    [
+      69,
+      "Polynucleotides / PDRN (salmon DNA)",
+      "C2",
+      59
+    ],
+    [
+      70,
+      "Topical peptides (general)",
+      "C6",
+      58
+    ],
+    [
+      71,
+      "Silk pillowcase",
+      "C8",
+      57
+    ],
+    [
+      72,
+      "Oral probiotics",
+      "C5",
+      56
+    ],
+    [
+      73,
+      "Resveratrol (oral)",
+      "C5",
+      56
+    ],
+    [
+      74,
+      "Double cleansing (habit)",
+      "C6",
+      55
+    ],
+    [
+      75,
+      "Epsom / magnesium baths",
+      "C7",
+      55
+    ],
+    [
+      76,
+      "Topical EGF (growth factor)",
+      "C2",
+      54
+    ],
+    [
+      77,
+      "Water softeners (for established eczema)",
+      "C7",
+      54
+    ],
+    [
+      78,
+      "Cold showers / cold-water immersion",
+      "C3",
+      52
+    ],
+    [
+      79,
+      "Senolytics (dasatinib + quercetin)",
+      "C2",
+      50
+    ],
+    [
+      80,
+      "Facial steaming",
+      "C3",
+      48
+    ],
+    [
+      81,
+      "Finnish / dry sauna (for skin)",
+      "C3",
+      47
+    ],
+    [
+      82,
+      "Infrared sauna (for skin)",
+      "C3",
+      47
+    ],
+    [
+      83,
+      "Hot-cold contrast therapy",
+      "C3",
+      46
+    ],
+    [
+      84,
+      "Biotin (skin, in replete people)",
+      "C5",
+      45
+    ],
+    [
+      85,
+      "Ice / cold facials, skin icing",
+      "C3",
+      45
+    ],
+    [
+      86,
+      "Exosome therapy",
+      "C2",
+      43
+    ],
+    [
+      87,
+      "Stem-cell therapies (cosmetic)",
+      "C2",
+      43
+    ],
+    [
+      88,
+      "Sulfur springs",
+      "C7",
+      41
+    ],
+    [
+      89,
+      "Nutrigenomic / at-home genetic tests",
+      "C2",
+      40
+    ],
+    [
+      90,
+      "Whole-body cryotherapy (for skin)",
+      "C3",
+      27
+    ]
+  ],
+  "changelog": [
+    {
+      "v": "v1.1",
+      "date": "2026-07-09",
+      "note": "First pass of Cycles 2–9 completed — 90 interventions scored (26 Core, 49 Promising, 14 Experimental, 1 Skip). Protocol populated. Weekly task repurposed to *deepen* the shallowest cycle each week rather than create new ones."
+    },
+    {
+      "v": "v1.0",
+      "date": "2026-07-09",
+      "note": "Project chartered. SkinScore defined. Cycle 1 completed. Weekly cadence scheduled (Cycle 2 onward)."
+    }
+  ]
+}
