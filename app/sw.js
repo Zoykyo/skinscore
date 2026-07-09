@@ -1,5 +1,5 @@
 /* SkinScore service worker — offline app shell + push + notification click handling */
-const CACHE = 'skinscore-v5';
+const CACHE = 'skinscore-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -27,6 +27,15 @@ self.addEventListener('activate', (e) => {
 // Cache-first for app shell, network-first fallback, offline-safe.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // App shell (navigations + index.html) network-first so content/config updates land without a SW bump.
+  if (e.request.mode === 'navigate' || /\/(index\.html)?$/.test(new URL(e.request.url).pathname)) {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {}); return res; })
+        .catch(() => caches.match(e.request).then((c) => c || caches.match('./index.html')))
+    );
+    return;
+  }
   // The research data file is network-first so weekly updates propagate; cache is the offline fallback.
   if (new URL(e.request.url).pathname.endsWith('skinscore-data.json')) {
     e.respondWith(
