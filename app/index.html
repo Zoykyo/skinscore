@@ -526,7 +526,7 @@
       <div class="set-row"><span class="lab">Morning</span><input type="time" id="remAm" value="08:00"></div>
       <div class="set-row"><span class="lab">Evening</span><input type="time" id="remPm" value="21:00"></div>
       <div class="set-row"><span class="lab">Daily plan push <small>Reliable server-sent notification, even when closed</small></span><label class="switch"><input type="checkbox" id="pushOn"><span class="slider"></span></label></div>
-      <p class="ios-hint" id="pushHint">Local reminders fire while the app is open or backgrounded. For a guaranteed daily notification when the app is fully closed — especially on iPhone — turn on <b>Daily plan push</b> (needs the one-time server setup in <span class="tnum">app/server</span>) and install to your home screen.</p>
+      <p class="ios-hint" id="pushHint">Local reminders fire while the app is open or backgrounded. For a guaranteed daily notification when the app is fully closed — especially on iPhone — install to your Home Screen, then turn on <b>Daily plan push</b> and register this device once (a “device code” appears to copy).</p>
     </div>
     <div class="set-block">
       <h4>Appearance</h4>
@@ -1333,10 +1333,12 @@
   }
 
   // --- Web Push (reliable daily notification via a serverless sender) ---
-  // Paste your VAPID public key + subscribe endpoint to enable (see app/server/README.md). Empty = no-backend fallback.
-  var VAPID_PUBLIC_KEY = '';
+  // No-backend push: the daily send runs from the repo's GitHub Actions cron (see .github/workflows/push-daily.yml
+  // and tools/send-push.mjs). VAPID public key below; private key lives in repo secrets. PUSH_ENDPOINT stays empty
+  // (there's no receiver server) — enabling push instead surfaces a one-time "device code" to register.
+  var VAPID_PUBLIC_KEY = 'BCHEG6WZ5OsMzrsdgzDeNFgh8U3uadttNXkGM_HgPAhe_GlXTG3PcM2u7NrPtSj3iU-CIkWsNrnadP7GP7XYbXQ';
   var PUSH_ENDPOINT = '';
-  function pushConfigured(){ return !!(VAPID_PUBLIC_KEY && PUSH_ENDPOINT); }
+  function pushConfigured(){ return !!VAPID_PUBLIC_KEY; }
   function urlB64ToUint8(b64){ var pad='='.repeat((4-b64.length%4)%4); var s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); var raw=atob(s); var arr=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i); return arr; }
   function enablePush(){
     if(!('serviceWorker' in navigator) || !('PushManager' in window)) return Promise.reject('unsupported');
@@ -1344,8 +1346,27 @@
     return (('Notification' in window && Notification.permission==='granted') ? Promise.resolve('granted') : Notification.requestPermission())
       .then(function(p){ if(p!=='granted') throw 'denied'; return navigator.serviceWorker.ready; })
       .then(function(reg){ return reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUBLIC_KEY)}); })
-      .then(function(sub){ return fetch(PUSH_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({subscription:sub, hour:state.settings.remind.am, tz:Intl.DateTimeFormat().resolvedOptions().timeZone})}); })
-      .then(function(){ state.optimizer.pushOn=true; save(); });
+      .then(function(sub){
+        var payload={subscription:sub.toJSON(), hour:state.settings.remind.am, tz:Intl.DateTimeFormat().resolvedOptions().timeZone};
+        state.optimizer.pushSub=payload; state.optimizer.pushOn=true; save();
+        // If a receiver endpoint is ever configured, POST to it; otherwise the device code is registered manually.
+        if(PUSH_ENDPOINT){ return fetch(PUSH_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}).catch(function(){}); }
+      });
+  }
+  function showDeviceCode(){
+    var hint=byId('pushHint'); if(!hint) return;
+    var old=byId('deviceCodeBox'); if(old) old.remove();
+    var sub=state.optimizer && state.optimizer.pushSub; if(!sub) return;
+    var code=JSON.stringify(sub);
+    var box=document.createElement('div'); box.id='deviceCodeBox'; box.className='ios-hint'; box.style.marginTop='8px';
+    box.innerHTML='✓ This device is subscribed. To switch the daily server push on, register it once — tap <b>Copy device code</b> and add it to the repo’s push list (<span class="tnum">tools/push-subscriptions.json</span>) or send it to your setup.'+
+      '<div style="margin-top:8px"><button class="ghostbtn" id="copyDevBtn">Copy device code</button></div>';
+    hint.parentNode.insertBefore(box, hint.nextSibling);
+    byId('copyDevBtn').addEventListener('click', function(){
+      var b=byId('copyDevBtn');
+      try{ navigator.clipboard.writeText(code).then(function(){ b.textContent='Copied ✓'; setTimeout(function(){ if(byId('copyDevBtn')) byId('copyDevBtn').textContent='Copy device code'; },1600); }, function(){ prompt('Copy this device code:', code); }); }
+      catch(e){ prompt('Copy this device code:', code); }
+    });
   }
 
   // --- Render the suggest-only "today's plan" card ---
@@ -1749,12 +1770,13 @@
   rAm.addEventListener('change', function(){ state.settings.remind.am=rAm.value; save(); scheduleRem(); });
   rPm.addEventListener('change', function(){ state.settings.remind.pm=rPm.value; save(); scheduleRem(); });
 
-  var pOn=byId('pushOn'); if(pOn){ pOn.checked=state.optimizer.pushOn;
+  var pOn=byId('pushOn'); if(pOn){ pOn.checked=state.optimizer.pushOn; if(pOn.checked) showDeviceCode();
     pOn.addEventListener('change', function(){
       if(pOn.checked){
-        if(!pushConfigured()){ pOn.checked=false; alert('Daily plan push needs the one-time server setup — see app/server/README.md. Local reminders still work.'); return; }
-        enablePush().then(function(){ pOn.checked=true; }).catch(function(){ pOn.checked=false; state.optimizer.pushOn=false; save(); alert('Couldn’t enable push (permission denied or unsupported on this browser).'); });
-      } else { state.optimizer.pushOn=false; save();
+        if(!pushConfigured()){ pOn.checked=false; alert('Daily plan push isn’t configured in this build. Local reminders still work.'); return; }
+        enablePush().then(function(){ pOn.checked=true; showDeviceCode(); }).catch(function(){ pOn.checked=false; state.optimizer.pushOn=false; save(); alert('Couldn’t enable push (permission denied, or unsupported — on iPhone, install to the Home Screen first).'); });
+      } else { state.optimizer.pushOn=false; state.optimizer.pushSub=null; save();
+        var b=byId('deviceCodeBox'); if(b) b.remove();
         try{ navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription(); }).then(function(s){ if(s) s.unsubscribe(); }); }catch(e){}
       }
     });

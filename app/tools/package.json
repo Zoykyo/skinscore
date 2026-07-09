@@ -1,0 +1,9 @@
+{
+  "name": "skinscore-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build + push tooling for the SkinScore PWA",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

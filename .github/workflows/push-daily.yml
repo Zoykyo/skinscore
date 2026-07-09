@@ -1,0 +1,30 @@
+name: Daily push
+
+on:
+  schedule:
+    # Hourly (UTC). The sender only notifies a device when the current time matches
+    # that device's chosen local reminder hour, so one hourly job covers every timezone.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install deps
+        run: npm install --no-audit --no-fund
+        working-directory: app/tools
+      - name: Send daily push
+        run: node send-push.mjs
+        working-directory: app/tools
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
