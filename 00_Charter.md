@@ -85,3 +85,9 @@ medications; climate and typical sun exposure; and budget/effort appetite.
 - **v1.1 (2026-07-09):** First pass of Cycles 2–9 completed — 90 interventions scored (26 Core,
   49 Promising, 14 Experimental, 1 Skip). Protocol populated. Weekly task repurposed to *deepen*
   the shallowest cycle each week rather than create new ones.
+- **v1.2 (2026-07-09):** Added the pairing optimizer — an on-device auto-search loop that
+  re-sequences your routine each day to keep amplifier pairings together (vitamin C + SPF;
+  retinoid + niacinamide + ceramide) and hard-block the cancel-effect pairs (benzoyl peroxide +
+  retinol/vitamin C; retinoid + acid the same night; over-exfoliation). Adapts to your day
+  (sleep, stress, new products, UV) and suggests — you approve. Optional Web Push for a reliable
+  daily nudge.
