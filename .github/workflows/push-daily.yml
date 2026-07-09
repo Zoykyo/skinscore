@@ -6,6 +6,11 @@ on:
     # that device's chosen local reminder hour, so one hourly job covers every timezone.
     - cron: "0 * * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Send now to every device, ignoring their chosen hour (test)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -28,3 +33,5 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          PUSH_SUBSCRIPTIONS: ${{ secrets.PUSH_SUBSCRIPTIONS }}
+          FORCE: ${{ github.event.inputs.force }}
