@@ -1,0 +1,14 @@
+{
+  "name": "skinscore-push",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional Web Push backend for SkinScore — wakes the closed PWA once a day; the plan is computed on-device.",
+  "scripts": {
+    "vapid": "web-push generate-vapid-keys",
+    "send": "node send-daily.mjs"
+  },
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

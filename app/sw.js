@@ -1,5 +1,5 @@
-/* SkinScore service worker — offline app shell + notification click handling */
-const CACHE = 'skinscore-v3';
+/* SkinScore service worker — offline app shell + push + notification click handling */
+const CACHE = 'skinscore-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -50,12 +50,28 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
+// Server-sent daily recommendation (Web Push). Payload: {title, body, url}.
+self.addEventListener('push', (e) => {
+  let data = { title: 'SkinScore', body: 'Your daily skin plan is ready.', url: './index.html' };
+  try { if (e.data) data = Object.assign(data, e.data.json()); } catch (_) {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: './icons/icon-192.png',
+      badge: './icons/icon-192.png',
+      tag: 'skinscore-daily',
+      data: { url: data.url || './index.html' }
+    })
+  );
+});
+
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './index.html';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const c of clients) { if ('focus' in c) return c.focus(); }
-      if (self.clients.openWindow) return self.clients.openWindow('./index.html');
+      if (self.clients.openWindow) return self.clients.openWindow(url);
     })
   );
 });

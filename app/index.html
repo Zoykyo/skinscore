@@ -102,6 +102,26 @@
   .pchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   .pchip { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-soft); color: var(--ink-soft); }
 
+  /* Optimizer / iteration-loop card */
+  .optim { border: 1px solid var(--line); background: linear-gradient(120deg, var(--pm-wash), transparent 62%), var(--surface); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .optim .op-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .optim .op-head h3 { font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .op-badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 15%, transparent); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .op-sub { font-size: 12.5px; color: var(--ink-soft); margin: 2px 0 12px; }
+  .op-tune { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .op-chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-soft); font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 999px; cursor: pointer; transition: all .15s; }
+  .op-chip:hover { border-color: var(--accent); }
+  .op-chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  [data-mode="night"] .op-chip[aria-pressed="true"] { color: #14131A; }
+  .op-why { list-style: none; margin: 0 0 4px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .op-why li { font-size: 13px; display: flex; gap: 9px; align-items: flex-start; color: var(--ink); line-height: 1.45; }
+  .op-why li .ic { flex: none; margin-top: 1px; font-size: 13px; }
+  .op-why li.warn .ic { color: var(--warn-ink); }
+  .op-kept { font-size: 12.5px; color: var(--ink-soft); border-top: 1px solid var(--line-soft); padding-top: 11px; margin-top: 11px; line-height: 1.5; }
+  .op-kept b { color: var(--good); font-weight: 650; }
+  .op-actions { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+  .op-applied { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--good); margin-top: 12px; }
+  .op-note { font-size: 12px; color: var(--ink-faint); margin-top: 10px; line-height: 1.5; }
   .hero { background: linear-gradient(180deg, var(--am-wash), transparent 60%), var(--surface); border: 1px solid var(--line); border-radius: 20px;
     padding: 24px; box-shadow: var(--shadow); display: grid; grid-template-columns: auto 1fr; gap: 26px; align-items: center; margin-bottom: 16px; transition: background .5s ease; }
   [data-mode="night"] .hero { background: linear-gradient(180deg, var(--pm-wash), transparent 60%), var(--surface); }
@@ -395,6 +415,7 @@
 
     <section id="today" role="tabpanel">
       <div id="personalizeSlot"></div>
+      <div id="optimizerSlot"></div>
       <div class="hero">
         <div class="dial" aria-hidden="true">
           <svg width="132" height="132" viewBox="0 0 132 132">
@@ -498,7 +519,8 @@
       <div class="set-row"><span class="lab">Daily reminders <small>Nudge for your AM &amp; PM routine</small></span><label class="switch"><input type="checkbox" id="remindOn"><span class="slider"></span></label></div>
       <div class="set-row"><span class="lab">Morning</span><input type="time" id="remAm" value="08:00"></div>
       <div class="set-row"><span class="lab">Evening</span><input type="time" id="remPm" value="21:00"></div>
-      <p class="ios-hint">Reminders fire while the app is installed and running in the background. Some browsers won't deliver them when the app is fully closed — installing to your home screen makes them most reliable.</p>
+      <div class="set-row"><span class="lab">Daily plan push <small>Reliable server-sent notification, even when closed</small></span><label class="switch"><input type="checkbox" id="pushOn"><span class="slider"></span></label></div>
+      <p class="ios-hint" id="pushHint">Local reminders fire while the app is open or backgrounded. For a guaranteed daily notification when the app is fully closed — especially on iPhone — turn on <b>Daily plan push</b> (needs the one-time server setup in <span class="tnum">app/server</span>) and install to your home screen.</p>
     </div>
     <div class="set-block">
       <h4>Appearance</h4>
@@ -656,6 +678,7 @@
   ];
   var rubric = [['Evidence strength',30],['Impact (effect size)',25],['Safety',20],['Effort & adherence',15],['Cost',10]];
   var changelog = [
+    {v:'v1.2', date:'2026-07-09', note:'Added the pairing optimizer — an on-device auto-search loop that re-sequences your routine each day to keep amplifier pairings together (vitamin C + SPF, retinoid + niacinamide + ceramide) and hard-block the cancel-effect pairs (benzoyl peroxide + retinol/vitamin C, retinoid + acid the same night, over-exfoliation). Tunes to your day (sleep, stress, new products, UV) and suggests — you approve. Optional Web Push for a reliable daily nudge.'},
     {v:'v1.1', date:'2026-07-09', note:'First pass of Cycles 2–9 completed — 90 interventions scored (26 Core · 49 Promising · 14 Experimental · 1 Skip). Protocol populated. Weekly task repurposed to deepen the shallowest cycle each week.'},
     {v:'v1.0', date:'2026-07-09', note:'Project chartered. SkinScore defined. Cycle 1 completed. Weekly cadence scheduled (Cycle 2 onward).'}
   ];
@@ -769,6 +792,15 @@
   if(state.settings.theme == null) state.settings.theme = state.mode || 'auto';
   state.settings.remind = state.settings.remind || {on:false, am:'08:00', pm:'21:00'};
   if(state.profile === undefined) state.profile = null;
+  // Optimizer (auto-search iteration loop) + daily-context state — additive, defensively defaulted
+  state.optimizer = state.optimizer || {};
+  state.optimizer.weights = state.optimizer.weights || {syn:1.0, anti:1.5, on:1.2, effort:0.5};
+  state.optimizer.accepted = state.optimizer.accepted || {};
+  state.optimizer.pushOn = !!state.optimizer.pushOn;
+  state.context = state.context || {};
+  state.context.day = state.context.day || {};
+  state.context.weather = state.context.weather || null;
+  state.context.geoOK = !!state.context.geoOK;
   function load(){ try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch(e){ return {}; } }
   function save(){ try { localStorage.setItem(LS, JSON.stringify(state)); } catch(e){} }
 
@@ -791,8 +823,11 @@
   function decorate(list, weekly){
     return list.map(function(it){
       var fit = fitFor(it);
-      var paused = fit.flag==='avoid' || (state.barrier.recovery && it.active);
-      var pauseReason = fit.flag==='avoid' ? fit.reason : (state.barrier.recovery && it.active ? 'Paused during barrier recovery — simplify to cleanse · moisturize · SPF.' : '');
+      var od = optimizerDefer(it);
+      var paused = fit.flag==='avoid' || (state.barrier.recovery && it.active) || od.defer;
+      var pauseReason = fit.flag==='avoid' ? fit.reason
+        : (state.barrier.recovery && it.active ? 'Paused during barrier recovery — simplify to cleanse · moisturize · SPF.'
+        : od.defer ? od.reason : '');
       return {item:it, fit:fit, paused:paused, pauseReason:pauseReason, weekly:!!weekly};
     });
   }
@@ -952,9 +987,318 @@
   function startTrial(id){ state.trials[id]={start:todayKey(), ended:false, result:null}; save(); renderTrials(); }
   function endTrial(id, result){ if(state.trials[id]){ state.trials[id].ended=true; state.trials[id].result=result; save(); } renderTrials(); }
 
+  /* ================= PAIRING OPTIMIZER — auto-search "iteration loop" =================
+     Karpathy loop: propose one small legal change -> score -> keep-if-better (inner, ~ms),
+     then learn preference weights from logged adherence (outer, per-day). Runs fully on-device.
+     SAFETY: block-severity antagonist pairs are pruned structurally (never scored, never learnable);
+     the learning loop can only move preference weights. fitFor() 'avoid' items are excluded upstream. */
+
+  var INTERACTIONS = {
+    // Amplifiers — pairs that reinforce each other when co-timed correctly
+    amplify: [
+      {a:'antioxidant', b:'sun',        when:'am',    mag:2, why:'Kept vitamin C in the morning with your SPF — it mops up the UV radicals sunscreen misses.'},
+      {a:'retinoid',    b:'niacinamide',when:'pm',    mag:2, why:'Kept your retinoid with niacinamide tonight — it buffers the irritation so you tolerate it.'},
+      {a:'retinoid',    b:'barrier',    when:'pm',    mag:2, why:'Kept a ceramide moisturizer around your retinoid — the buffer that keeps you on it.'},
+      {a:'retinoid',    b:'sun',        when:'cross', mag:3, why:'Your retinoid rebuilds collagen and SPF protects it — the two load-bearing anti-aging steps.'},
+      {a:'niacinamide', b:'barrier',    when:'pm',    mag:1, why:''}
+    ],
+    // Antagonists — sev:'block' = hard structural constraint (never co-occur); sev:'soft' = preference penalty
+    antagonist: [
+      {a:'retinoid',   b:'benzoyl',    sev:'block', when:'session', why:'Benzoyl peroxide deactivates a retinol/retinoid layered in the same session — run BPO in the morning, or on separate days, or switch to adapalene which layers safely.'},
+      {a:'antioxidant',b:'benzoyl',    sev:'block', when:'session', why:'Benzoyl peroxide oxidizes vitamin C — keep them in different sessions.'},
+      {a:'retinoid',   b:'exfoliant',  sev:'block', when:'session', why:'A retinoid and an exfoliating acid the same night overwhelms the barrier — alternate them on separate nights.'},
+      {a:'exfoliant',  b:'exfoliant',  sev:'block', when:'session', why:'Two exfoliants at once damages the barrier — one at a time.'},
+      {a:'ghk',        b:'antioxidant',sev:'block', when:'session', why:'Vitamin C destabilizes copper peptides — keep them apart.'},
+      {a:'ghk',        b:'exfoliant',  sev:'block', when:'session', why:'Acids break down copper peptides — separate sessions.'},
+      {a:'antioxidant',b:'retinoid',   sev:'soft',  when:'session', why:'Vitamin C and your retinoid work best split — vitamin C by day, retinoid at night.'},
+      {a:'heat',       b:'retinoid',   sev:'soft',  when:'day',     why:'Heat plus a retinoid can over-irritate — skip the sauna on retinoid nights.'}
+    ]
+  };
+
+  // Canonical pairing tags for an item (maps existing ids/attrs to the graph vocabulary)
+  function pairKeys(it){
+    var k = {}, a = it.attrs || attrsFromName(it.name||''), id = it.id||'', nm = (it.name||'').toLowerCase();
+    function set(x){ k[x]=1; }
+    // explicit routine ids (authoritative)
+    if(id==='am-vitc') set('antioxidant');
+    if(id==='pm-retinoid'){ set('retinoid'); set('strong'); }
+    if(id==='pm-niacin'){ set('niacinamide'); set('barrier'); }
+    if(id==='pm-acne'){ set('acne'); set('benzoyl'); set('strong'); } // acne actives may include BPO — treat conservatively
+    if(id==='w-exfol'){ set('exfoliant'); set('strong'); }
+    if(id==='am-spf'||id==='h-sun') set('sun');
+    if(id==='am-moist'||id==='pm-moist') set('barrier');
+    // generic fallback so future items still pair
+    if(has(a,'retinoid')) set('retinoid');
+    if(has(a,'exfoliant')) set('exfoliant');
+    if(has(a,'antioxidant')||/vitamin c|ascorbic/.test(nm)) set('antioxidant');
+    if(/niacinamide/.test(nm)) set('niacinamide');
+    if(has(a,'barrier')) set('barrier');
+    if(has(a,'sun')) set('sun');
+    if(/benzoyl/.test(nm)) set('benzoyl');
+    if(/copper|ghk/.test(nm)) set('ghk');
+    if(has(a,'heat')) set('heat');
+    if(has(a,'strong_active')) set('strong');
+    return k;
+  }
+
+  // Items the optimizer may schedule/toggle for today (the actives); everything else is fixed context.
+  // Exclude fitFor-'avoid' items entirely — they're contraindicated for this user (handled by decorate's pause
+  // + any pregnancy azelaic swap), so they must not appear in the plan or drive pairing advice.
+  function schedItems(){ return routine.am.concat(routine.pm, routine.week).filter(function(it){ return it.active && fitFor(it).flag!=='avoid'; }); }
+  function prefSlot(it){ return routine.am.indexOf(it)>=0 ? 'am' : 'pm'; }
+  // Fixed (non-schedulable) items that still occupy a session for pairing math
+  function fixedItems(slot){ return (slot==='am'?routine.am:routine.pm).filter(function(it){ return !it.active; }); }
+
+  function mergeKeys(dst, cnt, src){ for(var k in src){ dst[k]=1; cnt[k]=(cnt[k]||0)+1; } }
+  function sessionKeys(cand, slot){
+    var present={}, cnt={};
+    fixedItems(slot).forEach(function(it){ mergeKeys(present,cnt,pairKeys(it)); });
+    if(slot==='am') mergeKeys(present,cnt,pairKeys({id:'h-sun',name:'sun'})); // sun-protective behavior is an AM 'sun' contributor
+    schedItems().forEach(function(it){ if(cand[it.id]===slot) mergeKeys(present,cnt,pairKeys(it)); });
+    return {present:present, cnt:cnt};
+  }
+  // Hard-constraint gate: does this candidate co-time any block-severity antagonist, or mis-slot a photosensitizer?
+  function blocked(cand){
+    // Photosensitizers (retinoids, exfoliating acids) are PM-only — never schedule them in the morning.
+    var misSlot = schedItems().some(function(it){ var k=pairKeys(it); return cand[it.id]==='am' && (k.retinoid||k.exfoliant); });
+    if(misSlot) return true;
+    return ['am','pm'].some(function(slot){
+      var sk = sessionKeys(cand, slot);
+      return INTERACTIONS.antagonist.some(function(e){
+        if(e.sev!=='block') return false;
+        if(e.a===e.b) return sk.cnt[e.a] >= 2;
+        return sk.present[e.a] && sk.present[e.b];
+      });
+    });
+  }
+
+  function ctxMult(it, ctx){
+    var k = pairKeys(it), m = 1;
+    if(ctx.sleepRough && k.strong) m *= 0.7;
+    if(ctx.stressed  && k.strong) m *= 0.75;
+    if(ctx.newProduct&& k.strong) m *= 0.7;
+    if(ctx.uvHigh    && k.exfoliant) m *= 0.55;
+    return m;
+  }
+  function effortBudget(){ var P=pget(); return P&&P.effort==='minimal'?2 : P&&P.effort==='high'?5 : 3; }
+
+  function scoreCand(cand, ctx, W){
+    var s=0, am=sessionKeys(cand,'am'), pm=sessionKeys(cand,'pm');
+    INTERACTIONS.amplify.forEach(function(e){
+      var on = e.when==='am'  ? (am.present[e.a]&&am.present[e.b])
+             : e.when==='pm'  ? (pm.present[e.a]&&pm.present[e.b])
+             : e.when==='cross'? ((am.present[e.a]||pm.present[e.a])&&(am.present[e.b]||pm.present[e.b]))
+             : ((am.present[e.a]&&am.present[e.b])||(pm.present[e.a]&&pm.present[e.b]));
+      if(on) s += W.syn * e.mag;
+    });
+    INTERACTIONS.antagonist.forEach(function(e){ if(e.sev!=='soft') return;
+      var clash = e.when==='day' ? ((am.present[e.a]||pm.present[e.a])&&(am.present[e.b]||pm.present[e.b]))
+                : ((am.present[e.a]&&am.present[e.b])||(pm.present[e.a]&&pm.present[e.b]));
+      if(clash) s -= W.anti;
+    });
+    var on=0;
+    schedItems().forEach(function(it){ if(cand[it.id]==='off') return; on++;
+      var f=fitFor(it), fm = f.flag==='good'?1.15 : f.flag==='caution'?0.6 : f.flag==='avoid'?0 : 1;
+      s += W.on * (it.score/100) * fm * ctxMult(it, ctx);
+    });
+    var budget=effortBudget(); if(on>budget) s -= W.effort*(on-budget);
+    return s;
+  }
+
+  function baselineCand(){ var c={}; schedItems().forEach(function(it){ c[it.id]=prefSlot(it); }); return c; }
+  function neighborsOf(cand){ var out=[], slots=['am','pm','off']; schedItems().forEach(function(it){ slots.forEach(function(sl){ if(cand[it.id]!==sl){ var c=clone(cand); c[it.id]=sl; out.push(c); } }); }); return out; }
+  function hashStr(s){ var h=2166136261; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15, 1|a); t=t+Math.imul(t^t>>>7, 61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  function profileSig(){ var P=pget(); return P? JSON.stringify([P.fitzpatrick,P.skinType,P.concerns,P.conditions,P.health,P.sun,P.effort]) : 'none'; }
+  function ctxSig(ctx){ return JSON.stringify([ctx.sleepRough,ctx.stressed,ctx.newProduct,ctx.uvHigh]); }
+
+  function repair(cand, rnd){ var c=clone(cand), g=0;
+    while(blocked(c) && g++<24){ var on=schedItems().filter(function(it){ return c[it.id]!=='off'; }); if(!on.length) break;
+      // prefer turning off the lowest-value on item
+      on.sort(function(a,b){ return a.score-b.score; }); c[on[0].id]='off'; }
+    return c;
+  }
+  function optimizeDay(ctx){
+    var W=state.optimizer.weights;
+    var rnd=mulberry32(hashStr(todayKey()+'|'+profileSig()+'|'+ctxSig(ctx)));
+    var best=repair(baselineCand(), rnd), bestScore=scoreCand(best, ctx, W);
+    for(var ep=0; ep<6; ep++){
+      var cur=clone(best), curScore=bestScore, T=1.0;
+      for(var step=0; step<40; step++){
+        var neigh=neighborsOf(cur).filter(function(c){ return !blocked(c); });
+        if(!neigh.length) break;
+        var cand=neigh[Math.floor(rnd()*neigh.length)], sc=scoreCand(cand, ctx, W), d=sc-curScore;
+        if(d>0 || rnd()<Math.exp(d/Math.max(0.05,T))){ cur=cand; curScore=sc; }
+        if(curScore>bestScore){ best=clone(cur); bestScore=curScore; }
+        T*=0.9;
+      }
+    }
+    return best;
+  }
+
+  function slotName(s){ return s==='am'?'morning':s==='pm'?'evening':'off'; }
+  function whyDeferred(it, cand){
+    var mk=pairKeys(it), out=null;
+    INTERACTIONS.antagonist.forEach(function(e){ if(e.sev!=='block'||out) return;
+      var other = mk[e.a]?e.b : mk[e.b]?e.a : null; if(!other) return;
+      ['am','pm'].forEach(function(slot){ if(out) return; if(sessionKeys(cand,slot).present[other]) out=e.why; });
+    });
+    return out || 'Held off today to avoid stacking too many actives at once — reintroduce it on a lighter day.';
+  }
+  function whyMoved(it, from, to, cand){
+    if(to==='off') return whyDeferred(it, cand);
+    var mk=pairKeys(it), out=null;
+    INTERACTIONS.antagonist.forEach(function(e){ if(e.sev!=='block'||out) return; var other=mk[e.a]?e.b:mk[e.b]?e.a:null; if(!other) return; out=e.why; });
+    return out || ('Moved to the '+slotName(to)+' for better layering.');
+  }
+
+  function planFromCand(cand, ctx){
+    var run={am:[],pm:[]}, defer=[], kept=[], diff=[], base=baselineCand();
+    schedItems().forEach(function(it){ var slot=cand[it.id];
+      if(slot==='off') defer.push({id:it.id, name:it.name, reason:whyDeferred(it, cand)});
+      else run[slot].push(it.id);
+    });
+    var am=sessionKeys(cand,'am'), pm=sessionKeys(cand,'pm');
+    INTERACTIONS.amplify.forEach(function(e){ if(!e.why) return;
+      var on = e.when==='am'?(am.present[e.a]&&am.present[e.b]) : e.when==='pm'?(pm.present[e.a]&&pm.present[e.b]) : e.when==='cross'?((am.present[e.a]||pm.present[e.a])&&(am.present[e.b]||pm.present[e.b])) : ((am.present[e.a]&&am.present[e.b])||(pm.present[e.a]&&pm.present[e.b]));
+      if(on) kept.push(e.why);
+    });
+    schedItems().forEach(function(it){ var b=base[it.id], n=cand[it.id]; if(b!==n) diff.push(whyMoved(it, b, n, cand)); });
+    if(ctx.uvHigh) diff.push('High UV today — your SPF is the priority; reapply if you’re outdoors, and go easy on exfoliation.');
+    if(ctx.sleepRough || ctx.stressed) diff.push('Rough night / higher stress logged — go gentle today: buffer actives with moisturizer and stop anything that stings.');
+    if(ctx.newProduct) diff.push('New product introduced — hold back from piling on other strong actives so you can tell what it’s doing.');
+    if(!diff.length) diff.push('Your routine is already well-sequenced today — no clashes, amplifiers aligned. Keep going.');
+    return {run:run, defer:defer, kept:kept, diff:diff, uvHigh:!!ctx.uvHigh};
+  }
+
+  // --- Context (daily reality) ---
+  function todayCtxDay(){ var d=state.context.day[todayKey()] = state.context.day[todayKey()] || {}; return d; }
+  function buildContext(){
+    var d=todayCtxDay(), P=pget(), w=state.context.weather;
+    var uvHigh = (w && typeof w.uv==='number') ? w.uv>=6 : (P && P.sun==='high');
+    return { sleepRough:!!d.sleepRough, stressed:!!d.stressed, newProduct:!!d.newProduct, uvHigh:uvHigh, uv:(w?w.uv:null) };
+  }
+  function fetchWeather(){
+    if(!state.context.geoOK || !navigator.geolocation) return;
+    var w=state.context.weather; if(w && (Date.now()-w.ts) < 3*3600*1000) return; // fresh within 3h
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var la=pos.coords.latitude.toFixed(2), lo=pos.coords.longitude.toFixed(2);
+      fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&daily=uv_index_max&timezone=auto&forecast_days=1', {cache:'no-store'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(dd){ if(!dd||!dd.daily||!dd.daily.uv_index_max) return; state.context.weather={uv:dd.daily.uv_index_max[0], ts:Date.now()}; save(); renderOptimizer(); })
+        .catch(function(){});
+    }, function(){ state.context.geoOK=false; save(); }, {timeout:8000, maximumAge:3600000});
+  }
+
+  // --- Applied effect of an ACCEPTED plan: pause conflicting actives for today (read by decorate) ---
+  function optimizerDefer(it){
+    try{
+      var acc = state.optimizer.accepted[todayKey()];
+      if(!acc || !acc.plan || !acc.plan.defer) return {defer:false, reason:''};
+      var hit=null; acc.plan.defer.forEach(function(d){ if(d.id===it.id) hit=d; });
+      return hit ? {defer:true, reason:hit.reason} : {defer:false, reason:''};
+    }catch(e){ return {defer:false, reason:''}; }
+  }
+
+  // --- Cross-day learning (outer loop): nudge preference weights from logged adherence ---
+  function learnFromYesterday(){
+    try{
+      var y=keyOf(new Date(Date.now()-86400000));
+      if(state.optimizer.learned===y) return;
+      var acc=state.optimizer.accepted[y];
+      if(acc && acc.plan){ var rec=acc.plan.run.am.concat(acc.plan.run.pm);
+        if(rec.length){ var c=state.checks[y]||{}, done=rec.filter(function(id){return c[id];}).length, adh=done/rec.length, W=state.optimizer.weights;
+          if(adh<0.5) W.effort=Math.min(1.2, W.effort+0.05);        // struggled to finish -> suggest fewer actives
+          else if(adh>0.85) W.effort=Math.max(0.2, W.effort-0.03);  // crushing it -> allow a bit more
+        }
+      }
+      state.optimizer.learned=y; save();
+    }catch(e){}
+  }
+
+  // --- Catch-up notification (no-backend delivery when the app is opened) ---
+  function catchUpNotify(){
+    try{
+      if(!state.settings.remind.on || !('Notification' in window) || Notification.permission!=='granted') return;
+      var t=todayKey(); if(state.optimizer.lastNotified===t) return; if(new Date().getHours()<7) return;
+      var ctx=buildContext(), plan=planFromCand(optimizeDay(ctx), ctx);
+      fireNote('Today’s skin plan ✨', plan.diff[0]);
+      state.optimizer.lastNotified=t; save();
+    }catch(e){}
+  }
+
+  // --- Web Push (reliable daily notification via a serverless sender) ---
+  // Paste your VAPID public key + subscribe endpoint to enable (see app/server/README.md). Empty = no-backend fallback.
+  var VAPID_PUBLIC_KEY = '';
+  var PUSH_ENDPOINT = '';
+  function pushConfigured(){ return !!(VAPID_PUBLIC_KEY && PUSH_ENDPOINT); }
+  function urlB64ToUint8(b64){ var pad='='.repeat((4-b64.length%4)%4); var s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); var raw=atob(s); var arr=new Uint8Array(raw.length); for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i); return arr; }
+  function enablePush(){
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return Promise.reject('unsupported');
+    if(!pushConfigured()) return Promise.reject('not-configured');
+    return (('Notification' in window && Notification.permission==='granted') ? Promise.resolve('granted') : Notification.requestPermission())
+      .then(function(p){ if(p!=='granted') throw 'denied'; return navigator.serviceWorker.ready; })
+      .then(function(reg){ return reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64ToUint8(VAPID_PUBLIC_KEY)}); })
+      .then(function(sub){ return fetch(PUSH_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({subscription:sub, hour:state.settings.remind.am, tz:Intl.DateTimeFormat().resolvedOptions().timeZone})}); })
+      .then(function(){ state.optimizer.pushOn=true; save(); });
+  }
+
+  // --- Render the suggest-only "today's plan" card ---
+  function renderOptimizer(){
+    var host=byId('optimizerSlot'); if(!host) return; host.innerHTML='';
+    if(!hasProfile()) return; // the plain routine already shows; optimizer adds value once personalized
+    var today=todayKey(), ctx=buildContext(), cand=optimizeDay(ctx), plan=planFromCand(cand, ctx);
+    state.optimizer.today={key:today, plan:plan};
+    var accepted = state.optimizer.accepted[today];
+    var dismissed = state.optimizer.dismissed===today;
+
+    var d=todayCtxDay();
+    var tune='<div class="op-tune">'+
+      '<button class="op-chip" data-c="sleepRough" aria-pressed="'+(!!d.sleepRough)+'">😴 Rough night</button>'+
+      '<button class="op-chip" data-c="stressed" aria-pressed="'+(!!d.stressed)+'">😣 Stressed</button>'+
+      '<button class="op-chip" data-c="newProduct" aria-pressed="'+(!!d.newProduct)+'">🆕 New product</button>'+
+      '<button class="op-chip" data-c="geo" aria-pressed="'+(!!state.context.geoOK)+'">'+(state.context.weather&&typeof state.context.weather.uv==='number'?('☀️ UV '+Math.round(state.context.weather.uv)):'📍 Use weather')+'</button>'+
+      '</div>';
+
+    var why = plan.diff.map(function(x, i){ var positive = /well-sequenced|Keep going/i.test(x);
+      return '<li class="'+(positive?'':'warn')+'"><span class="ic">'+(positive?'✓':'⚠️')+'</span><span>'+x+'</span></li>'; }).join('');
+    var kept = plan.kept.length ? '<div class="op-kept"><b>Kept together:</b> '+plan.kept.slice(0,3).join(' ')+'</div>' : '';
+
+    var actions;
+    if(accepted){ actions='<div class="op-applied"><span>✓</span><span>Applied to today’s plan'+(plan.defer.length?(' — '+plan.defer.length+' active'+(plan.defer.length>1?'s':'')+' paused below'):'')+'</span></div>'+
+      '<button class="linkbtn" id="opUndo" style="margin-top:2px">Undo</button>'; }
+    else { actions='<div class="op-actions"><button class="primary" id="opAccept">Apply today</button><button class="ghostbtn" id="opKeep">Keep mine</button></div>'; }
+
+    var card=document.createElement('div'); card.className='optim';
+    card.innerHTML=
+      '<div class="op-head"><h3><span aria-hidden="true">🔁</span> Today’s optimized plan</h3><span class="op-badge">auto-tuned</span></div>'+
+      '<div class="op-sub">Re-sequences your routine to keep the amplifiers together and avoid the cancel-effect pairs — tuned to today.</div>'+
+      tune+
+      '<ul class="op-why">'+why+'</ul>'+ kept + actions +
+      '<div class="op-note">Suggestion only — nothing changes until you apply it. Educational, not medical advice.</div>';
+    host.appendChild(card);
+
+    // tune chips
+    card.querySelectorAll('.op-chip').forEach(function(b){ b.addEventListener('click', function(){
+      var c=b.getAttribute('data-c');
+      if(c==='geo'){ state.context.geoOK=!state.context.geoOK; save(); if(state.context.geoOK) fetchWeather(); renderOptimizer(); return; }
+      var day=todayCtxDay(); day[c]=!day[c]; save();
+      if(state.optimizer.accepted[today]){ delete state.optimizer.accepted[today]; } // context changed -> re-decide
+      renderToday();
+    }); });
+    var acc=byId('opAccept'); if(acc) acc.addEventListener('click', function(){ state.optimizer.accepted[today]={plan:plan, at:Date.now()}; state.optimizer.dismissed=null; save(); renderToday(); });
+    var keep=byId('opKeep'); if(keep) keep.addEventListener('click', function(){ state.optimizer.dismissed=today; save(); renderOptimizer(); });
+    var undo=byId('opUndo'); if(undo) undo.addEventListener('click', function(){ delete state.optimizer.accepted[today]; save(); renderToday(); });
+
+    if(dismissed && !accepted){ host.innerHTML=''; var mini=document.createElement('div'); mini.style.marginBottom='16px';
+      mini.innerHTML='<button class="linkbtn" id="opShow">🔁 Show today’s optimized plan</button>'; host.appendChild(mini);
+      byId('opShow').addEventListener('click', function(){ state.optimizer.dismissed=null; save(); renderOptimizer(); }); }
+  }
+
   function renderToday(){
     buildModel();
     renderPersonalizeSlot();
+    renderOptimizer();
     renderBarrier();
     fillModel(byId('amList'), todayModel.am);
     fillModel(byId('pmList'), todayModel.pm);
@@ -1272,6 +1616,17 @@
   rAm.addEventListener('change', function(){ state.settings.remind.am=rAm.value; save(); scheduleRem(); });
   rPm.addEventListener('change', function(){ state.settings.remind.pm=rPm.value; save(); scheduleRem(); });
 
+  var pOn=byId('pushOn'); if(pOn){ pOn.checked=state.optimizer.pushOn;
+    pOn.addEventListener('change', function(){
+      if(pOn.checked){
+        if(!pushConfigured()){ pOn.checked=false; alert('Daily plan push needs the one-time server setup — see app/server/README.md. Local reminders still work.'); return; }
+        enablePush().then(function(){ pOn.checked=true; }).catch(function(){ pOn.checked=false; state.optimizer.pushOn=false; save(); alert('Couldn’t enable push (permission denied or unsupported on this browser).'); });
+      } else { state.optimizer.pushOn=false; save();
+        try{ navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription(); }).then(function(s){ if(s) s.unsubscribe(); }); }catch(e){}
+      }
+    });
+  }
+
   var remTimers=[];
   function clearRem(){ remTimers.forEach(clearTimeout); remTimers=[]; }
   function nextMs(hhmm){ if(!hhmm) return null; var p=hhmm.split(':'); var d=new Date(); d.setHours(+p[0], +p[1], 0, 0); var diff=d-new Date(); return diff>0?diff:null; }
@@ -1313,6 +1668,9 @@
   if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js').catch(function(){}); }catch(e){} }
   scheduleRem();
   loadData();
+  learnFromYesterday();      // outer iteration loop: adapt from yesterday's adherence
+  if(state.context.geoOK) fetchWeather();
+  catchUpNotify();           // no-backend delivery: surface today's plan on open
 })();
 </script>
 </body>
