@@ -1,5 +1,5 @@
 /* SkinScore service worker — offline app shell + push + notification click handling */
-const CACHE = 'skinscore-v4';
+const CACHE = 'skinscore-v5';
 const ASSETS = [
   './',
   './index.html',

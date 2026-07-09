@@ -86,6 +86,33 @@ planFromCand` engine · `buildContext/fetchWeather` · `optimizerDefer` (read by
 - Pregnancy → retinoid excluded, azelaic swapped in, no phantom retinoid advice.
 - Context toggles, Apply (pauses 2 conflicting actives) / Undo (restores), no console errors.
 
+## Medications in the analysis (added 2026-07-09)
+
+Free-text **"medications & supplements you take"** in the intake (`state.profile.medications`, on-device).
+A 17-entry `MED_DB` (safety-reviewed) maps drug/supplement names → skin-relevant flags; `matchMeds` →
+`medFlags` → `effectiveHealth(P)` merges those flags into the health list `fitFor()` reads, so **every
+existing safety rule fires from meds with one changed line** (no rule duplication): e.g. doxycycline →
+`photosensitizing_med` → SPF caution on photosensitizing items; warfarin → `blood_thinners` → procedure
+caution; isotretinoin → `strong_active` avoid → excluded from the optimizer; thiazide/HCTZ →
+`skin_cancer_risk_med`; hormonal contraceptives → `pigment_risk`. New flags (`dryness_med`,
+`pigment_risk`, `acne_aggravating`, `skin_cancer_risk_med`) get light rules. The "For you" card shows a
+**Your medications** block: one caution sentence per recognized drug (always "confirm with your
+pharmacist"), an honest "no known skin interaction in our list — ask your pharmacist" line for unknowns,
+and a global disclaimer. **Safety stance:** severity tokens describe the *skincare* action never the drug;
+the app never tells a user to start/stop/change a medicine. Authored + adversarially safety-reviewed via
+workflow (fixed: thiazide skin-cancer over-claim downgraded; added St. John's Wort, hormonal
+contraceptives, hydroquinone, 5-FU/imiquimod, voriconazole, photosensitizing NSAIDs).
+
+## UV — current-hour + manual override (updated 2026-07-09)
+
+**Samsung watch verdict:** a PWA cannot read the Galaxy Watch's UV (no web/OAuth API for Samsung Health;
+Health Connect is Android-only; Web Bluetooth can't reach it) — but the watch's UV is itself a **GPS
+forecast**, and the app already fetches that same forecast from Open-Meteo. So instead of a bridge:
+`fetchWeather()` now also pulls `hourly=uv_index` and stores `uvNow` (current hour) + `uv` (daily peak);
+`buildContext()` drives `uvHigh` off `uvNow`. The optimizer chip shows "UV N now · peak M", and a **Set UV**
+button lets the user type the number their watch shows (`source:'manual'`, wins for the day, suppresses
+auto-refresh). Degrades to `profile.sun` when geolocation is declined.
+
 ## Not yet done / next
 
 - Author a fuller interaction graph (currently ~13 curated edges covering the routine's actives; extend

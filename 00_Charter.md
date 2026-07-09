@@ -91,3 +91,11 @@ medications; climate and typical sun exposure; and budget/effort appetite.
   retinol/vitamin C; retinoid + acid the same night; over-exfoliation). Adapts to your day
   (sleep, stress, new products, UV) and suggests — you approve. Optional Web Push for a reliable
   daily nudge.
+- **v1.3 (2026-07-09):** Medications now feed the analysis — add the drugs and supplements you
+  take and the app maps them to skin-safety flags (photosensitizers → stricter SPF; blood
+  thinners → procedure caution; isotretinoin → hold strong actives; thiazides/hormonal
+  contraceptives → sun/pigment care; and more), with a one-line caution per medicine that always
+  defers to your pharmacist. Unknown drugs get an honest "ask your pharmacist" note; the app never
+  tells you to start or stop a medicine. UV upgraded to a current-hour reading with the day's peak
+  and a manual "Set UV" entry so you can type the number your Galaxy Watch shows (the app already
+  uses the same forecast source your watch does; it can't read the watch directly).

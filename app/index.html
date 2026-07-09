@@ -99,6 +99,12 @@
   .foryou ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
   .foryou li { font-size: 13px; display: flex; gap: 8px; align-items: flex-start; }
   .foryou li .dotc { flex: none; margin-top: 1px; }
+  .fy-meds { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+  .fy-meds h4 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 9px; }
+  ul.med-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  ul.med-notes li { font-size: 13px; display: flex; gap: 9px; align-items: flex-start; line-height: 1.45; color: var(--ink); }
+  ul.med-notes li b { color: var(--accent-ink); }
+  .med-disc { font-size: 11.5px; color: var(--ink-faint); margin: 10px 0 0; line-height: 1.5; }
   .pchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
   .pchip { font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-soft); color: var(--ink-soft); }
 
@@ -719,6 +725,79 @@
     return a;
   }
 
+  /* ---------------- MEDICATIONS (decision-support, not medical advice) ----------------
+     Maps free-text drug/supplement names to skin-relevant safety flags + a one-sentence caution
+     that always defers to a pharmacist/clinician. Flags reuse the fitFor vocabulary so existing
+     rules fire; `severity` describes the SKINCARE action (hold actives / defer procedures / sun
+     care), NEVER the medication. Safety-reviewed; interactions folded into each caution sentence. */
+  var MED_DB = [
+    {match:["isotretinoin","accutane","roaccutane","claravis","absorica","myorisan","amnesteem","sotret","zenatane"],
+     display:"Isotretinoin (oral retinoid)", flags:["isotretinoin","retinoid_user","photosensitizing_med","dryness_med","pregnant"], severity:"hold-actives",
+     caution:"While you’re on isotretinoin your skin is drier and heals more slowly after skin-wounding procedures, so a dermatologist or pharmacist can help you time strong actives, resurfacing, or waxing — never stop a prescribed medicine on your own."},
+    {match:["tretinoin","retin-a","renova","atralin","refissa","altreno","tazarotene","tazorac","arazlo","adapalene","differin","trifarotene","aklief","topical retinoid","retinoic acid"],
+     display:"Topical prescription retinoid", flags:["retinoid_user","photosensitizing_med","dryness_med","pregnant"], severity:"go-slow",
+     caution:"Prescription retinoids thin and sensitize the outer skin, so a pharmacist or dermatologist can help you judge whether adding another exfoliating active or booking a procedure is too much at once."},
+    {match:["doxycycline","minocycline","tetracycline","vibramycin","oracea","doryx","minocin","solodyn","sarecycline","seysara"],
+     display:"Tetracycline antibiotic (doxycycline, minocycline)", flags:["photosensitizing_med","pigment_risk"], severity:"sun-care",
+     caution:"Tetracyclines are notably photosensitizing and minocycline can cause blue-grey pigmentation over time, so protect against sun and space any zinc, calcium, iron or magnesium supplements several hours from your dose — ask a pharmacist."},
+    {match:["ciprofloxacin","cipro","levofloxacin","levaquin","moxifloxacin","avelox","ofloxacin","fluoroquinolone","quinolone"],
+     display:"Fluoroquinolone antibiotic (ciprofloxacin, levofloxacin)", flags:["photosensitizing_med"], severity:"sun-care",
+     caution:"Fluoroquinolones can cause exaggerated sunburn-type reactions, so protect against sun and separate zinc or mineral supplements from your dose so the antibiotic still absorbs — a pharmacist can advise."},
+    {match:["sulfamethoxazole","trimethoprim","bactrim","septra","co-trimoxazole","sulfonamide","sulfa","sulfasalazine","dapsone"],
+     display:"Sulfonamide (sulfa) drug", flags:["photosensitizing_med"], severity:"sun-care",
+     caution:"Sulfa drugs are a recognized cause of photosensitivity, so ask a pharmacist about sun protection and report any new spreading rash, blistering, or mouth/eye involvement to a clinician promptly."},
+    {match:["hydrochlorothiazide","hctz","chlorthalidone","indapamide","thiazide","microzide"],
+     display:"Thiazide diuretic (HCTZ, chlorthalidone)", flags:["photosensitizing_med","skin_cancer_risk_med"], severity:"sun-care",
+     caution:"Thiazides are photosensitizing and, with long-term use, tied to a modest increase in a common and usually treatable skin cancer — a reason for daily SPF and skin checks, not a reason to change your blood-pressure medicine, which only your prescriber should adjust."},
+    {match:["amiodarone","cordarone","pacerone","nexterone","dronedarone","multaq"],
+     display:"Amiodarone (antiarrhythmic)", flags:["photosensitizing_med","pigment_risk"], severity:"sun-care",
+     caution:"Amiodarone is strongly photosensitizing and can cause a slate-grey discoloration of sun-exposed skin, so be diligent with sun protection and report any colour change to the clinician who manages it."},
+    {match:["warfarin","coumadin","jantoven","apixaban","eliquis","rivaroxaban","xarelto","dabigatran","pradaxa","edoxaban","savaysa","anticoagulant","blood thinner"],
+     display:"Oral anticoagulant (warfarin, apixaban, rivaroxaban)", flags:["blood_thinners"], severity:"defer-procedures",
+     caution:"Blood thinners raise bruising and bleeding, so clear any skin-breaking procedure — and bleeding-tendency supplements like fish oil — with your prescriber or pharmacist first, and never stop the medicine on your own."},
+    {match:["clopidogrel","plavix","aspirin","ticagrelor","brilinta","prasugrel","effient","dipyridamole","antiplatelet","baby aspirin"],
+     display:"Antiplatelet (clopidogrel, aspirin)", flags:["blood_thinners"], severity:"defer-procedures",
+     caution:"Antiplatelet drugs increase bruising and bleeding, so discuss skin-breaking procedures and fish-oil supplements with your prescriber or pharmacist before proceeding — don’t stop the medicine yourself."},
+    {match:["prednisone","prednisolone","methylprednisolone","medrol","dexamethasone","corticosteroid","systemic steroid","oral steroid","cortisone"],
+     display:"Systemic corticosteroid (prednisone)", flags:["immunocompromised","dryness_med","acne_aggravating"], severity:"go-slow",
+     caution:"Long-term oral steroids can thin and bruise skin, trigger steroid acne, and blunt immune defenses, so a clinician or pharmacist can help you gauge how aggressive to be with actives or procedures while you’re on them."},
+    {match:["methotrexate","rasuvo","otrexup","trexall","mtx"],
+     display:"Methotrexate (immunosuppressant)", flags:["immunocompromised","photosensitizing_med"], severity:"go-slow",
+     caution:"Methotrexate can increase sun sensitivity (including ‘sunburn recall’) and lowers immune defenses, so be strict with SPF and let your clinician or pharmacist guide the timing of strong actives or procedures — never adjust the dose yourself."},
+    {match:["st john's wort","st. john's wort","st johns wort","hypericum"],
+     display:"St. John’s Wort (herbal supplement)", flags:["photosensitizing_med"], severity:"sun-care",
+     caution:"St. John’s Wort is a common cause of drug-induced photosensitivity and can lower the blood levels of many prescription medicines, so tell a pharmacist you take it before relying on sun exposure or starting new treatments."},
+    {match:["oral contraceptive","birth control","ethinyl estradiol","estrogen","estradiol","hormone therapy","hrt","combined pill"],
+     display:"Combined hormonal contraceptive / estrogen therapy", flags:["pigment_risk"], severity:"sun-care",
+     caution:"Estrogen is the classic driver of melasma, which sun and some light-based procedures can worsen or rebound, so be strict with daily SPF and discuss any pigment treatments with a dermatologist."},
+    {match:["fluorouracil","5-fu","efudex","carac","fluoroplex","imiquimod","aldara","zyclara"],
+     display:"Topical field therapy (5-fluorouracil, imiquimod)", flags:["photosensitizing_med"], severity:"hold-actives",
+     caution:"Field-therapy creams like 5-fluorouracil and imiquimod cause intense sun sensitivity and inflammation, so don’t layer other actives or procedures on treated skin and follow your prescriber’s plan closely."},
+    {match:["hydroquinone","skin lightening","skin bleaching"],
+     display:"Hydroquinone (skin-lightening agent)", flags:[], severity:"go-slow",
+     caution:"Hydroquinone lightens pigment but can irritate and, with long unsupervised use, cause paradoxical darkening, so use it only in short, clinician-supervised cycles and avoid stacking it with strong acids, retinoids, or peels without guidance."},
+    {match:["voriconazole","vfend","itraconazole","posaconazole","azole antifungal"],
+     display:"Systemic azole antifungal (voriconazole)", flags:["photosensitizing_med","skin_cancer_risk_med"], severity:"sun-care",
+     caution:"Voriconazole is strongly phototoxic and, with long-term use, associated with photo-aging and skin cancer, so be rigorous with sun protection and skin checks and let the clinician who manages it advise you."},
+    {match:["naproxen","aleve","piroxicam","feldene","ketoprofen","nsaid","ibuprofen"],
+     display:"Photosensitizing NSAID (naproxen, piroxicam, ketoprofen)", flags:["photosensitizing_med"], severity:"sun-care",
+     caution:"Several NSAIDs — especially piroxicam, naproxen, and ketoprofen — can make skin more sun-sensitive, so use daily SPF and ask a pharmacist about sun protection if you take them regularly."}
+  ];
+  function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function matchMeds(meds){
+    var out = [];
+    (meds||[]).forEach(function(raw){ var n=String(raw||'').toLowerCase().trim(); if(!n) return; var hit=null;
+      for(var i=0;i<MED_DB.length && !hit;i++){ for(var j=0;j<MED_DB[i].match.length;j++){ if(n.indexOf(MED_DB[i].match[j])>=0){ hit=MED_DB[i]; break; } } }
+      out.push({input:raw, med:hit});
+    });
+    return out;
+  }
+  function medFlags(meds){ var f=[]; matchMeds(meds).forEach(function(x){ if(x.med) x.med.flags.forEach(function(fl){ if(f.indexOf(fl)<0) f.push(fl); }); }); return f; }
+  // Merge med-derived flags into the health list the rules read — without mutating the saved profile.
+  function effectiveHealth(P){ var base=(P.health||[]).slice(); medFlags(P.medications).forEach(function(fl){ if(base.indexOf(fl)<0) base.push(fl); }); return base; }
+  function medSummary(){ var P=pget(); if(!P||!P.medications||!P.medications.length) return null; var rec=matchMeds(P.medications);
+    return { known:rec.filter(function(x){return x.med;}), unknown:rec.filter(function(x){return !x.med;}) }; }
+
   /* ---------------- FIT ENGINE ---------------- */
   function has(list, k){ return list && list.indexOf(k) >= 0; }
   function pget(){ return state.profile || null; }
@@ -728,7 +807,7 @@
   function fitFor(item){
     var P = pget(); if(!P) return {flag:null, reason:''};
     var A = item.attrs || attrsFromName(item.name || '');
-    var conc = P.concerns || [], cond = P.conditions || [], hlth = P.health || [];
+    var conc = P.concerns || [], cond = P.conditions || [], hlth = effectiveHealth(P);
     var preg = has(hlth,'pregnant') || has(hlth,'breastfeeding');
     var avoid = [], caution = [], good = [];
 
@@ -755,7 +834,11 @@
     if(fz>=4 && (has(A,'exfoliant')||has(A,'procedure')||has(A,'strong_active'))) caution.push('Deeper skin tones have higher post-inflammatory pigmentation risk — start low and slow, patch-test, and be strict with SPF.');
     if(has(A,'hydroquinone')) caution.push('Prescription-grade lightener — long or unsupervised use risks ochronosis and rebound pigmentation; use only in short, clinician-supervised cycles.');
     if(P.skinType==='sensitive' && has(A,'strong_active')) caution.push('Sensitive skin — introduce slowly, buffer with moisturizer, and stop if it stings.');
-    if(has(A,'photosensitizing') && (P.sun==='high'||has(hlth,'high_skin_cancer_risk')||has(cond,'skin_cancer_hx'))) caution.push('This raises UV sensitivity and you’re higher UV-risk — pair it with daily SPF without fail.');
+    if(has(A,'photosensitizing') && (P.sun==='high'||has(hlth,'high_skin_cancer_risk')||has(cond,'skin_cancer_hx')||has(hlth,'skin_cancer_risk_med'))) caution.push('This raises UV sensitivity and you’re higher UV-risk — pair it with daily SPF without fail.');
+    // --- medication-derived flags ---
+    if(has(hlth,'dryness_med') && has(A,'strong_active')) caution.push('A medication you take dries the skin — go gentler with strong actives and buffer with moisturizer.');
+    if(has(hlth,'acne_aggravating') && has(A,'acne')) caution.push('A medication you take can worsen acne — these actives help, but discuss the flare with your prescriber.');
+    if(has(hlth,'pigment_risk') && (has(A,'ipl')||has(A,'ablative')||has(A,'light_energy'))) caution.push('A medication you take makes skin melasma-prone — light/heat procedures can rebound pigment, so get a specialist opinion.');
     if(P.budget==='minimal' && has(A,'expensive')) caution.push('Higher cost — optional; the free and cheap Core steps deliver most of the benefit.');
     if(P.effort==='minimal' && (has(A,'device')||has(A,'procedure')||has(A,'oral_supplement'))) caution.push('Adds friction — nail the simple core routine before adding this.');
     if(has(A,'heat') && has(conc,'wrinkles')) caution.push('Heat accelerates collagen breakdown — fine for wellbeing, not for anti-aging.');
@@ -775,6 +858,8 @@
     if(has(cond,'psoriasis') && has(A,'eczema')) good.push('Barrier / soak care helps psoriasis-prone skin.');
     if(P.sun==='high' && has(A,'photoprotective_supplement')) good.push('A useful oral adjunct for heavy sun exposure.');
     if((P.climate==='dry'||P.climate==='cold') && has(A,'barrier')) good.push('Your dry climate makes barrier care especially valuable.');
+    if((has(hlth,'skin_cancer_risk_med')||has(hlth,'pigment_risk')) && has(A,'sun')) good.push('Extra important for you — a medication you take raises sun/pigment risk, so SPF and skin checks matter more.');
+    if(has(hlth,'dryness_med') && has(A,'barrier')) good.push('A medication you take is drying — barrier care matters more for you.');
 
     if(avoid.length) return {flag:'avoid', reason:avoid[0]};
     if(caution.length) return {flag:'caution', reason:caution[0]};
@@ -927,8 +1012,15 @@
     var chips = summaryChips().slice(0,5).map(function(c){ return '<span class="pchip">'+c+'</span>'; }).join('');
     var col1 = '<div><h4>Your priorities</h4><ul>'+ (top.length? top.map(function(it){ return '<li><span class="dotc">🟢</span><span>'+it.name+'</span></li>'; }).join('') : '<li><span>Your Core routine — no special promotions.</span></li>') +'</ul></div>';
     var col2 = '<div><h4>Heads up</h4><ul>'+ (fyFlags.length? fyFlags.map(function(e){ return '<li><span class="dotc">'+fitDot(e.fit.flag)+'</span><span>'+e.item.name+' — '+e.fit.reason+'</span></li>'; }).join('') : '<li><span>Nothing flagged. You’re clear to run the full routine.</span></li>') +'</ul></div>';
+    var ms=medSummary(), medHtml='';
+    if(ms && (ms.known.length || ms.unknown.length)){
+      var mi = ms.known.map(function(x){ return '<li><span class="dotc">💊</span><span><b>'+escHtml(x.med.display)+'</b> — '+x.med.caution+'</span></li>'; });
+      ms.unknown.forEach(function(x){ mi.push('<li><span class="dotc">💊</span><span>“'+escHtml(x.input)+'”: no known skin interaction in our list — ask your pharmacist if it affects sun sensitivity, bleeding, or healing.</span></li>'); });
+      medHtml='<div class="fy-meds"><h4>Your medications</h4><ul class="med-notes">'+mi.join('')+'</ul>'+
+        '<p class="med-disc">Educational safety flags only — never start, stop, or change a medication based on this app. Confirm with your pharmacist or clinician.</p></div>';
+    }
     card.innerHTML='<div class="fy-head"><h3>For you</h3><button class="linkbtn" id="editProfile2">Edit profile</button></div>'+
-      '<div class="pchips" style="margin-bottom:12px">'+chips+'</div><div class="fy-cols">'+col1+col2+'</div>';
+      '<div class="pchips" style="margin-bottom:12px">'+chips+'</div><div class="fy-cols">'+col1+col2+'</div>'+medHtml;
     host.appendChild(card);
     byId('editProfile2').addEventListener('click', openIntake);
   }
@@ -1175,17 +1267,30 @@
   function todayCtxDay(){ var d=state.context.day[todayKey()] = state.context.day[todayKey()] || {}; return d; }
   function buildContext(){
     var d=todayCtxDay(), P=pget(), w=state.context.weather;
-    var uvHigh = (w && typeof w.uv==='number') ? w.uv>=6 : (P && P.sun==='high');
-    return { sleepRough:!!d.sleepRough, stressed:!!d.stressed, newProduct:!!d.newProduct, uvHigh:uvHigh, uv:(w?w.uv:null) };
+    var uvVal = w ? (typeof w.uvNow==='number' ? w.uvNow : w.uv) : null;
+    var uvHigh = (typeof uvVal==='number') ? uvVal>=6 : (P && P.sun==='high');
+    return { sleepRough:!!d.sleepRough, stressed:!!d.stressed, newProduct:!!d.newProduct, uvHigh:uvHigh, uv:(w?w.uv:null), uvNow:uvVal };
+  }
+  // Current-hour UV from Open-Meteo hourly arrays (times are local when timezone=auto)
+  function uvNowFrom(dd){
+    try{ if(dd.hourly && dd.hourly.time && dd.hourly.uv_index){
+      var n=new Date(), key=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())+'T'+pad(n.getHours())+':00';
+      var i=dd.hourly.time.indexOf(key); if(i>=0 && typeof dd.hourly.uv_index[i]==='number') return dd.hourly.uv_index[i];
+    } }catch(e){}
+    return null;
   }
   function fetchWeather(){
     if(!state.context.geoOK || !navigator.geolocation) return;
-    var w=state.context.weather; if(w && (Date.now()-w.ts) < 3*3600*1000) return; // fresh within 3h
+    var w=state.context.weather;
+    if(w && w.source==='manual' && keyOf(new Date(w.ts))===todayKey()) return; // a value you typed wins for today
+    if(w && (Date.now()-w.ts) < 3*3600*1000) return; // forecast fresh within 3h
     navigator.geolocation.getCurrentPosition(function(pos){
       var la=pos.coords.latitude.toFixed(2), lo=pos.coords.longitude.toFixed(2);
-      fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&daily=uv_index_max&timezone=auto&forecast_days=1', {cache:'no-store'})
+      fetch('https://api.open-meteo.com/v1/forecast?latitude='+la+'&longitude='+lo+'&daily=uv_index_max&hourly=uv_index&timezone=auto&forecast_days=1', {cache:'no-store'})
         .then(function(r){ return r.ok?r.json():null; })
-        .then(function(dd){ if(!dd||!dd.daily||!dd.daily.uv_index_max) return; state.context.weather={uv:dd.daily.uv_index_max[0], ts:Date.now()}; save(); renderOptimizer(); })
+        .then(function(dd){ if(!dd||!dd.daily||!dd.daily.uv_index_max) return;
+          var uvMax=dd.daily.uv_index_max[0], now=uvNowFrom(dd);
+          state.context.weather={uv:uvMax, uvNow:(now==null?uvMax:now), ts:Date.now(), source:'forecast'}; save(); renderOptimizer(); })
         .catch(function(){});
     }, function(){ state.context.geoOK=false; save(); }, {timeout:8000, maximumAge:3600000});
   }
@@ -1252,12 +1357,16 @@
     var accepted = state.optimizer.accepted[today];
     var dismissed = state.optimizer.dismissed===today;
 
-    var d=todayCtxDay();
+    var d=todayCtxDay(), w=state.context.weather;
+    var uvLabel = (w && typeof w.uv==='number')
+      ? ('☀️ UV '+Math.round(typeof w.uvNow==='number'?w.uvNow:w.uv)+' now · peak '+Math.round(w.uv)+(w.source==='manual'?' ✎':''))
+      : '📍 Use weather';
     var tune='<div class="op-tune">'+
       '<button class="op-chip" data-c="sleepRough" aria-pressed="'+(!!d.sleepRough)+'">😴 Rough night</button>'+
       '<button class="op-chip" data-c="stressed" aria-pressed="'+(!!d.stressed)+'">😣 Stressed</button>'+
       '<button class="op-chip" data-c="newProduct" aria-pressed="'+(!!d.newProduct)+'">🆕 New product</button>'+
-      '<button class="op-chip" data-c="geo" aria-pressed="'+(!!state.context.geoOK)+'">'+(state.context.weather&&typeof state.context.weather.uv==='number'?('☀️ UV '+Math.round(state.context.weather.uv)):'📍 Use weather')+'</button>'+
+      '<button class="op-chip" data-c="geo" aria-pressed="'+(!!state.context.geoOK)+'">'+uvLabel+'</button>'+
+      '<button class="op-chip" data-c="uvset" aria-pressed="false">✏️ Set UV</button>'+
       '</div>';
 
     var why = plan.diff.map(function(x, i){ var positive = /well-sequenced|Keep going/i.test(x);
@@ -1282,6 +1391,10 @@
     card.querySelectorAll('.op-chip').forEach(function(b){ b.addEventListener('click', function(){
       var c=b.getAttribute('data-c');
       if(c==='geo'){ state.context.geoOK=!state.context.geoOK; save(); if(state.context.geoOK) fetchWeather(); renderOptimizer(); return; }
+      if(c==='uvset'){ var cur=(w&&typeof w.uv==='number')?String(Math.round(w.uv)):'';
+        var v=prompt('Today’s UV index (0–12) — e.g. the number your watch or weather app shows:', cur);
+        if(v!=null){ var n=parseFloat(v); if(!isNaN(n)&&n>=0&&n<=15){ state.context.weather={uv:n, uvNow:n, ts:Date.now(), source:'manual'}; if(state.optimizer.accepted[today]) delete state.optimizer.accepted[today]; save(); renderToday(); } }
+        return; }
       var day=todayCtxDay(); day[c]=!day[c]; save();
       if(state.optimizer.accepted[today]){ delete state.optimizer.accepted[today]; } // context changed -> re-decide
       renderToday();
@@ -1538,6 +1651,7 @@
     {key:'concerns', type:'multi', label:'Main concerns', help:'Pick any that apply — matched items get promoted.', options:CONCERNS},
     {key:'conditions', type:'multi', label:'Skin conditions', options:CONDITIONS},
     {key:'health', type:'multi', label:'Health & medications', help:'Used only for safety flags — pregnancy and meds change what’s safe.', options:HEALTH},
+    {key:'medications', type:'medlist', label:'Medications & supplements you take', help:'Type any prescription or supplement (one at a time) — used only to add skin-safety flags. Never start, stop, or change a medicine based on this app.'},
     {key:'sun', type:'single', label:'Typical sun exposure', options:SUN},
     {key:'climate', type:'single', label:'Climate', options:CLIMATE},
     {key:'budget', type:'single', label:'Budget appetite', options:BUDGET},
@@ -1553,6 +1667,25 @@
       if(f.help){ var hp=document.createElement('small'); hp.className='help'; hp.textContent=f.help; fld.appendChild(hp); }
       if(f.type==='number'){ var i=document.createElement('input'); i.type='number'; i.min=0; i.max=120; i.inputMode='numeric'; i.className='txtin'; i.style.maxWidth='140px'; i.value=intakeDraft.age||''; i.addEventListener('input', function(){ intakeDraft.age = i.value? +i.value : null; }); fld.appendChild(i); }
       else if(f.type==='text'){ var tx=document.createElement('input'); tx.type='text'; tx.className='txtin'; tx.value=intakeDraft.allergies||''; tx.addEventListener('input', function(){ intakeDraft.allergies=tx.value; }); fld.appendChild(tx); }
+      else if(f.type==='medlist'){
+        var list = intakeDraft.medications || (intakeDraft.medications=[]);
+        var chipsEl=document.createElement('div'); chipsEl.className='optwrap'; if(list.length) chipsEl.style.marginBottom='10px';
+        list.forEach(function(mn, idx){ var b=document.createElement('button'); b.type='button'; b.className='optchip'; b.setAttribute('aria-pressed','true');
+          b.innerHTML=escHtml(mn)+' <span aria-hidden="true">✕</span>'; b.title='Remove'; b.addEventListener('click', function(){ list.splice(idx,1); renderIntake(); }); chipsEl.appendChild(b); });
+        var row=document.createElement('div'); row.style.display='flex'; row.style.gap='8px';
+        var inp=document.createElement('input'); inp.type='text'; inp.className='txtin'; inp.placeholder='e.g. doxycycline, warfarin, fish oil'; inp.setAttribute('aria-label','Add a medication');
+        var addb=document.createElement('button'); addb.type='button'; addb.className='ghostbtn'; addb.textContent='Add';
+        function commitMed(){ var v=inp.value.trim(); if(!v) return; list.push(v); renderIntake();
+          setTimeout(function(){ var ni=byId('intakeBody').querySelector('input[aria-label="Add a medication"]'); if(ni) ni.focus(); }, 0); }
+        addb.addEventListener('click', commitMed);
+        inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); commitMed(); } });
+        row.appendChild(inp); row.appendChild(addb);
+        fld.appendChild(chipsEl); fld.appendChild(row);
+        if(list.length){ var rec=matchMeds(list), known=rec.filter(function(x){return x.med;}).length;
+          var pv=document.createElement('div'); pv.className='tc-hint'; pv.style.marginTop='9px';
+          pv.textContent = known+' of '+list.length+' recognized for skin-safety flags · the rest are kept but ask your pharmacist.'; fld.appendChild(pv); }
+        host.appendChild(fld); return;
+      }
       else if(f.type==='fitz'){ var w=document.createElement('div'); w.className='fzwrap'; FZ.forEach(function(o){ var b=document.createElement('button'); b.type='button'; b.className='fzopt'; b.setAttribute('aria-pressed', intakeDraft.fitzpatrick===o[0]); b.innerHTML='<span class="fznum">'+o[1]+'</span><span class="fzdesc">'+o[2]+'</span>'; b.addEventListener('click', function(){ intakeDraft.fitzpatrick = (intakeDraft.fitzpatrick===o[0])?null:o[0]; renderIntake(); }); w.appendChild(b); }); fld.appendChild(w); }
       else { var wrp=document.createElement('div'); wrp.className='optwrap'; f.options.forEach(function(o){ var val=o[0], labl=o[1]; var b=document.createElement('button'); b.type='button'; b.className='optchip';
         var on = f.type==='multi' ? ((intakeDraft[f.key]||[]).indexOf(val)>=0) : (intakeDraft[f.key]===val); b.setAttribute('aria-pressed', on); b.textContent=labl;
